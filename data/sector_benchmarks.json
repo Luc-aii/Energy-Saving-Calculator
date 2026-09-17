@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-15",
+  "source": "EMA / BCA Green Mark data",
+  "unit": "kWh/m2/year",
+  "sectors": {
+    "Manufacturing": { "bestInClass": 80, "average": 180, "poor": 320 },
+    "Hospitality": { "bestInClass": 200, "average": 350, "poor": 550 },
+    "F&B": { "bestInClass": 400, "average": 700, "poor": 1100 },
+    "Retail": { "bestInClass": 250, "average": 400, "poor": 600 },
+    "Office/Professional Services": { "bestInClass": 120, "average": 200, "poor": 350 },
+    "Healthcare": { "bestInClass": 300, "average": 500, "poor": 750 },
+    "Logistics": { "bestInClass": 80, "average": 180, "poor": 320 },
+    "Data Centre": { "bestInClass": 1.2, "average": 1.5, "poor": 2.0, "unit": "PUE ratio" },
+    "Other": { "bestInClass": 150, "average": 300, "poor": 500 }
+  }
+}

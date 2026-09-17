@@ -1,0 +1,22 @@
+{
+  "version": "2.3.4",
+  "lastUpdated": "2026-09-17",
+  "electricity": {
+    "singapore": {
+      "gridEmissionFactorKgPerKwh": 0.402,
+      "source": "EMA Singapore, Grid Emission Factor 2024",
+      "priorYear": 0.412,
+      "annualDeclineAssumption": 0.005
+    }
+  },
+  "fuels": {
+    "dieselKgCo2ePerLitre": 2.68,
+    "petrolKgCo2ePerLitre": 2.29,
+    "cngKgCo2ePerKg": 2.56,
+    "source": "Diesel/petrol: Singapore Emission Factors Registry (SEFR) / NEA. CNG: UK DEFRA 2023 conversion factors via Climatiq (2562.57 kg CO2e/tonne stationary combustion), verified 2026-09-17 — was previously 2.15, understated by ~19% relative to this sourced figure and to the stoichiometric pure-methane combustion value (~2.75 kg CO2/kg CH4); CNG is ~85-95% methane so a value just below 2.75 is expected."
+  },
+  "naturalGas": {
+    "kgCo2ePerGJ": 50.67,
+    "source": "UK DESNZ/DEFRA 2026 GHG Conversion Factors, natural gas stationary combustion (0.18231 kg CO2e/kWh GCV, converted at 277.78 kWh/GJ). No Singapore-specific natural gas combustion factor was found via search; this UK figure is a reasonable global-default stand-in since natural gas combustion chemistry doesn't vary meaningfully by country. Previously an unsourced IPCC-default placeholder — now DEFRA-sourced."
+  }
+}

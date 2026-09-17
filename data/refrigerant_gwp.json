@@ -1,0 +1,18 @@
+{
+  "version": "1.1.1",
+  "lastUpdated": "2026-09-17",
+  "source": "IPCC AR5, 100-year GWP (Table 8.A.1) — corrected 2026-09-17: this file was labelled \"IPCC AR6\" but the stored values are actually AR5. All five values (R-410A 2088, R-32 675, R-134a 1430, R-22 1810, SF6 23,500) verified as exact AR5 figures against the GHG Protocol's own reference table (properly text-extracted via pdftotext, not a search summary — https://ghgprotocol.org/sites/default/files/2024-08/Global-Warming-Potential-Values%20(August%202024).pdf, AR4/AR5/AR6 columns: SF6 = 22,800/23,500/24,300). An earlier pass flagged SF6 as unverified based on noisy WebSearch summaries that turned out to be citing the AR4 figure (22,800) as if it were AR5 — resolved now that the actual table was read directly.",
+  "ar6Alternative": {
+    "note": "If the team wants to move to AR6 instead: R-32 -> 771 (+14%), R-134a -> ~1530 (+7%), SF6 -> 24,300 (+3%). R-410A and R-22 are unchanged under AR6. Verified against the GHG Protocol reference table, 2026-09-17."
+  },
+  "gases": {
+    "R-410A": 2088,
+    "R-32": 675,
+    "R-134a": 1430,
+    "R-22": 1810,
+    "SF6": 23500
+  },
+  "phaseOutNotice": {
+    "R-22": "R-22 (HCFC-22) is being phased out under the Montreal Protocol in Singapore. New top-ups indicate ageing equipment approaching end-of-life — flag for replacement rather than repeated top-up."
+  }
+}

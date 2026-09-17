@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-15",
+  "source": "Schneider Electric case studies (se.com)",
+  "products": [
+    {
+      "id": "ebo",
+      "name": "EcoStruxure Building Operation (EBO)",
+      "covers": "HVAC optimisation, lighting control, occupancy-based energy management",
+      "savingType": "Building energy efficiency",
+      "savingRange": { "low": 0.15, "high": 0.30 },
+      "evidence": "JLL Asia-Pacific HQ — 30% energy reduction; Marriott — 15% achieved",
+      "appliesTo": ["Manufacturing", "Hospitality", "F&B", "Retail", "Office/Professional Services", "Healthcare"]
+    },
+    {
+      "id": "resource-advisor",
+      "name": "EcoStruxure Resource Advisor",
+      "covers": "Energy data management & carbon reporting",
+      "savingType": "Anomaly detection / waste reduction",
+      "savingRange": { "low": 0.05, "high": 0.15 },
+      "evidence": "Marriott International — 15% energy savings via centralised reporting",
+      "appliesTo": ["all"]
+    },
+    {
+      "id": "resource-advisor-scope3",
+      "name": "EcoStruxure Resource Advisor (Scope 3 module)",
+      "covers": "Scope 1, 2 & 3 data collection, carbon reporting (GRI, ISSB, CDP-ready)",
+      "savingType": "Scope 3 quantification only — not monetised",
+      "savingRange": null,
+      "evidence": "Platform has 200+ GHG protocol factors",
+      "appliesTo": ["all"]
+    },
+    {
+      "id": "microgrid-eaas",
+      "name": "EcoStruxure Microgrid / EaaS",
+      "covers": "Distributed energy / solar + storage",
+      "savingType": "Energy cost reduction",
+      "savingRange": { "low": 0.20, "high": 0.40 },
+      "evidence": "Kallang Pulse: 3.3yr payback; Chew's Agriculture: ~50% utility savings",
+      "appliesTo": ["Manufacturing", "Logistics", "Data Centre"]
+    },
+    {
+      "id": "power-powerlogic",
+      "name": "EcoStruxure Power (PowerLogic metering)",
+      "covers": "Power quality & distribution",
+      "savingType": "Demand charge reduction",
+      "savingRange": { "low": 0.05, "high": 0.10 },
+      "evidence": "Cross-portfolio benchmark",
+      "appliesTo": ["all"]
+    },
+    {
+      "id": "net-zero-advisory",
+      "name": "Schneider Sustainability Business / Net Zero Advisory",
+      "covers": "Sustainability reporting & decarbonisation planning",
+      "savingType": "Compliance cost avoidance + SBTi alignment",
+      "savingRange": null,
+      "evidence": "Marriott partnership",
+      "appliesTo": ["all"]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "version": "1.0.3",
+  "lastUpdated": "2026-09-17",
+  "source": "DEFRA 2026 GHG Conversion Factors (business travel updated); DEFRA 2024 (freight — see freightNote); US EPA EEIO v2.0 (spend-based fallback)",
+  "spendBased": {
+    "purchasedGoodsKgCo2ePerUsd": {
+      "low": 0.5,
+      "high": 0.8
+    },
+    "notes": "EEIO spend-based factors, USD basis. Convert local currency to USD before applying."
+  },
+  "freight": {
+    "airKgCo2ePerTonneKm": 1.5,
+    "seaKgCo2ePerTonneKm": {
+      "low": 0.01,
+      "high": 0.04
+    },
+    "roadDieselHgvKgCo2ePerTonneKm": 0.11,
+    "freightNote": "DEFRA's 2026 update moved these figures, but not uniformly: air freight is reported down ~18-23%, while road HGV moved in opposite directions by vehicle class (rigid 7.5-17t up ~18%, articulated >3.5-33t down ~6.2%), so no single blended 'average HGV' replacement figure could be sourced from search alone. Left at the 2024 values rather than guessing a blend — pull the exact DEFRA 2026 table (https://assets.publishing.service.gov.uk/media/6a2940653b15d05a7ce3202f/2026-GHG-conversion-factors-major-changes-report.pdf) before relying on these for freight-heavy clients."
+  },
+  "businessTravel": {
+    "longHaulEconomyKgCo2ePerPassengerKm": 0.11704,
+    "shortHaulEconomyKgCo2ePerPassengerKm": 0.12576,
+    "hotelNightKgCo2e": 20,
+    "hotelNightNote": "PRD MNC Block D (Cat 6) asks for hotel nights but the PRD's confirmed sources don't supply a factor. 20 kgCO2e/night is a commonly-cited industry-average placeholder (e.g. Cornell/Greenview hotel carbon studies), NOT DEFRA-sourced. Researched 2026-09-17: DEFRA's own UK hotel-stay figure is only ~10.4 kgCO2e/night, but that reflects the UK's much lower cooling load — a tropical, AC-heavy Singapore/SEA hotel plausibly runs meaningfully higher, so importing the UK figure would likely understate this. Could not find an APAC-specific Cornell/Greenview HCMI figure via search (the source PDFs found weren't text-extractable). Left at 20, still flagged — an APAC/Singapore-specific hotel-footprint source is needed to properly resolve this."
+  },
+  "wellToTank": {
+    "multiplierOnScope1Fuel": 0.19,
+    "note": "PRD MNC Block D Cat 3 (Fuel & Energy Related Activities) is defined as 'auto-calculated from Scope 1 fuel x WTT factor' but no WTT factor is given in the confirmed sources. 0.19 (~19% uplift on direct combustion emissions) is a commonly-cited order-of-magnitude WTT ratio for liquid fuels, NOT a sourced DEFRA figure. Researched 2026-09-17: found a secondary-source reference suggesting DEFRA's actual diesel WTT uplift is closer to ~23.8%, which would corroborate 0.19 as being in the right range but possibly a touch low — the reference wasn't precise enough to confidently replace this number outright. Left unchanged, still flagged — pull the DEFRA 2026 'WTT-fuels' tab directly to resolve exactly."
+  },
+  "commuting": {
+    "singaporeAverageOneWayKm": 15,
+    "workingDaysPerYear": 250,
+    "kgCo2ePerPassengerKm": {
+      "public": 0.04,
+      "car": 0.17
+    },
+    "note": "PRD specifies 'industry average distance x mode' but does not supply a per-mode emission factor. Car (0.17) matches DEFRA's UK average-car figure almost exactly (verified via WebSearch 2026-09-17). Public transport (0.04) is still an unverified placeholder — DEFRA's UK average bus alone is ~0.075 kg/km, roughly double ours, but Singapore's public transit is MRT-heavy (electric rail is far more efficient per passenger-km than diesel buses), so a lower blended figure is plausible — just not independently confirmed for Singapore specifically. Flag for DEFRA/LTA-backed sign-off before production use."
+  },
+  "assumptions": {
+    "fxSgdToUsd": 0.786,
+    "note": "Updated via WebSearch 2026-09-17 — SGD/USD traded ~0.786-0.79 in mid-September 2026 (was 0.74, an engineering placeholder that had drifted ~6% stale). Still a spot rate that will keep moving; revisit periodically rather than treating as fixed.",
+    "defaultBusinessFlightRoundTripKm": 4000,
+    "flightAssumptionNote": "PRD SME Block D collects only a flight COUNT, not distance/class split. 4,000km round-trip is a regional-hub placeholder assumption pending team sign-off, not a sourced figure. Spot-checked 2026-09-17 against real distances (Singapore-Bangkok round-trip ~2,830km, Singapore-KL round-trip ~600km, Singapore-Hong Kong round-trip ~2,570-5,000km): 4,000km RT is a defensible blended average IF the travel mix skews toward Hong Kong/further destinations, but would overstate a KL/Jakarta/Bangkok-only travel pattern. Still a placeholder since the actual destination mix isn't known — but the order of magnitude checks out. Also fixed a related code bug: the engine was applying the LONG-haul per-km factor to this explicitly-short/medium-haul assumption, which understated the result (short-haul is higher per km due to take-off/landing overhead) — corrected in src/lib/calc/engine.ts to use shortHaulEconomyKgCo2ePerPassengerKm."
+  }
+}

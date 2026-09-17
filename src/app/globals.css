@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
+/* Force light mode: dark: classes only fire on an explicit .dark ancestor, which this app never adds. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eaf3ee;
+  --foreground: #0f2a20;
+
+  /* Brand palette — soft sage/mint page, deep-teal accent, ink text. */
+  --color-page: #eaf3ee;
+  --color-card: #ffffff;
+  --color-ink: #0f2a20;
+  --color-ink-soft: #4b6459;
+  --color-border: #dbe8e1;
+  --color-brand-50: #e6f5ee;
+  --color-brand-100: #c9e9db;
+  --color-brand-400: #2f9e73;
+  --color-brand-500: #16805a;
+  --color-brand-600: #0f6b49;
+  --color-brand-700: #0b5238;
+  --color-accent-amber: #d99a2b;
+  --color-accent-red: #c4483a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-page: var(--color-page);
+  --color-card: var(--color-card);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-border: var(--color-border);
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-400: var(--color-brand-400);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+  --color-accent-amber: var(--color-accent-amber);
+  --color-accent-red: var(--color-accent-red);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-step {
+  animation: fade-slide-in 0.25s ease-out;
+}
+
+@keyframes count-pulse {
+  0% {
+    background-color: var(--color-brand-100);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-value-update {
+  animation: count-pulse 0.6s ease-out;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-full-width {
+    grid-column: 1 / -1 !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
 }

@@ -1,0 +1,10 @@
+{
+  "version": "1.2.0",
+  "lastUpdated": "2026-09-17",
+  "source": "Diesel/petrol: averaged retailer board prices (Shell, Esso, Caltex, SPC, Sinopec) via motorist.sg petrol price comparison, 14-15 Sep 2026 — reflects a documented West Asia supply-disruption price surge. CNG: SMART Energy's own priceboard (Mandai station, the only CNG retailer in Singapore), updated 9 Sep 2026 — pump price S$4.95/kg before member/loyalty discounts (S$3.52-3.71/kg with discounts). All figures are board price before card/loyalty discounts, for consistency. Previous CNG figure (S$1.60/kg) was badly stale — off by roughly 3x.",
+  "pricesSgdPerUnit": {
+    "diesel": 4.05,
+    "petrol": 3.42,
+    "cng": 4.95
+  }
+}

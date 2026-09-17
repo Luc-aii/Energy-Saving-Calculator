@@ -1,0 +1,78 @@
+{
+  "version": "1.0.1",
+  "lastUpdated": "2026-09-17",
+  "source": "EnterpriseSG / GoBusiness",
+  "grants": [
+    {
+      "id": "eeg-base",
+      "name": "Energy Efficiency Grant (EEG) — Base Tier",
+      "maxAmountSgd": 30000,
+      "coFundRate": 0.7,
+      "eligibility": {
+        "companyType": [
+          "SME"
+        ],
+        "sectors": "all"
+      },
+      "validUntil": "2028-03-31"
+    },
+    {
+      "id": "eeg-advanced",
+      "name": "Energy Efficiency Grant (EEG) — Advanced Tier",
+      "maxAmountSgd": null,
+      "coFundRate": null,
+      "eligibility": {
+        "companyType": [
+          "SME",
+          "MNC"
+        ],
+        "sectors": "all",
+        "notes": "Larger facilities, project-dependent quantum"
+      },
+      "validUntil": "2028-03-31"
+    },
+    {
+      "id": "sme-sustainability-reporting",
+      "name": "SME Sustainability Reporting Programme",
+      "maxAmountSgd": null,
+      "coFundRate": 0.7,
+      "coFundRateAfter": {
+        "date": "2026-04-01",
+        "rate": 0.5
+      },
+      "eligibility": {
+        "companyType": [
+          "SME"
+        ],
+        "notes": "Non-listed SMEs only"
+      },
+      "validUntil": "2026-03-31"
+    },
+    {
+      "id": "psg-carbon-mgmt",
+      "name": "Productivity Solutions Grant (PSG) — Carbon Management",
+      "maxAmountSgd": null,
+      "coFundRate": 0.7,
+      "eligibility": {
+        "companyType": [
+          "SME"
+        ]
+      },
+      "validUntil": null
+    },
+    {
+      "id": "esp",
+      "name": "Enterprise Sustainability Programme (ESP)",
+      "maxAmountSgd": null,
+      "coFundRate": null,
+      "eligibility": {
+        "companyType": [
+          "SME",
+          "MNC"
+        ],
+        "notes": "Subsidised capability building"
+      },
+      "validUntil": null
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "version": "1.0.1",
+  "lastUpdated": "2026-09-17",
+  "source": "SP Group quarterly tariff announcements",
+  "currentBaseTariffSgdPerKwh": 0.3191,
+  "historicalQuarterly": [
+    {
+      "period": "2024-Q1",
+      "centsPerKwh": 29.79
+    },
+    {
+      "period": "2024-Q2",
+      "centsPerKwh": 29.69
+    },
+    {
+      "period": "2024-Q3",
+      "centsPerKwh": 30.11
+    },
+    {
+      "period": "2024-Q4",
+      "centsPerKwh": 29.1
+    },
+    {
+      "period": "2026-Q1",
+      "centsPerKwh": 26.71
+    },
+    {
+      "period": "2026-Q2",
+      "centsPerKwh": 27.27
+    },
+    {
+      "period": "2026-Q3",
+      "centsPerKwh": 31.91
+    }
+  ],
+  "gstRate": 0.09,
+  "updateFrequency": "quarterly",
+  "staleAfterMonths": 4
+}

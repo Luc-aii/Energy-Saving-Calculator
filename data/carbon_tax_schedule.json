@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-15",
+  "source": "NEA / MSE Singapore carbon tax trajectory",
+  "currency": "SGD",
+  "legislated": {
+    "2024": 25,
+    "2025": 25,
+    "2026": 45,
+    "2027": 45
+  },
+  "indicative2030": {
+    "conservative": 50,
+    "base": 65,
+    "optimistic": 80
+  },
+  "notes": "Years 2028-2029 are linearly interpolated between the 2027 legislated rate and the 2030 indicative rate. Years after 2030 hold flat at the 2030 rate for the selected scenario. This is a modelling assumption, not a legislated figure."
+}
