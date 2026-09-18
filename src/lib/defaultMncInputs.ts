@@ -12,7 +12,6 @@ export const defaultMncInputs: MncInputs = {
   ],
   fuelFleet: {
     mobileDieselLitresPerYear: 60000,
-    fleetByFuelType: { diesel: 50, petrol: 0, hybrid: 0, ev: 0 },
     isManufacturing: true,
     processCombustionGJPerYear: 5000,
   },
@@ -25,7 +24,7 @@ export const defaultMncInputs: MncInputs = {
     shortHaulPassengerKm: 100000,
     longHaulPassengerKm: 500000,
     hotelNights: 200,
-    commuteModeSplitPct: { public: 60, car: 30, activeOrWfh: 10 },
+    commuteModeSplitPct: { public: 60, car: 30 },
     averageCommuteKm: 15,
     wfhDaysPerWeek: 1,
     downstreamFreightTonneKm: { road: 500000, sea: 200000, air: 0 },

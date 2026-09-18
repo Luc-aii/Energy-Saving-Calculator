@@ -1,10 +1,9 @@
-import type { CarbonPriceScenario, CommuteMode, FreightMode, RefrigerantType, SensitivitySettings } from "./inputs";
+import type { CarbonPriceScenario, CommuteMode, RefrigerantType, SensitivitySettings } from "./inputs";
 
 export type ReportingFramework = "GRI" | "ISSB/IFRS S2" | "TCFD" | "CDP" | "SGX mandatory" | "None";
 export type BudgetRange = "<50k" | "50k-500k" | "500k-5M" | ">5M";
 export type EngagementModel = "Buy outright" | "EaaS" | "Consulting only" | "Not sure";
 export type SbtiStatus = "committed" | "in-progress" | "none";
-export type FleetFuelType = "diesel" | "petrol" | "hybrid" | "ev";
 
 export interface MncSite {
   id: string;
@@ -24,7 +23,6 @@ export interface MncFuelFleet {
   mobileDieselLitresPerYear?: number;
   petrolLitresPerYear?: number;
   cngKgPerYear?: number;
-  fleetByFuelType: Record<FleetFuelType, number>;
   isManufacturing: boolean;
   processCombustionGJPerYear?: number;
 }
@@ -53,15 +51,14 @@ export interface MncScope3 {
   hotelNights?: number;
 
   // Cat 7 — Employee Commuting
-  commuteModeSplitPct: { public: number; car: number; activeOrWfh: number };
+  /** The remainder (100 - public - car) is implicitly active transport/WFH — zero-emission, not separately tracked. */
+  commuteModeSplitPct: { public: number; car: number };
   averageCommuteKm: number;
   wfhDaysPerWeek: number;
 
   // Cat 9 — Downstream Transportation & Distribution
   downstreamFreightTonneKm?: { road: number; sea: number; air: number };
   downstreamFreightSpendSgd?: number;
-
-  freightMode?: FreightMode;
 }
 
 export interface MncBaseline {

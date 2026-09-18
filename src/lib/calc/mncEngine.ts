@@ -250,6 +250,10 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
     );
   }
 
+  if (inputs.baseline.otherMeasuresText) {
+    warnings.push(`You noted you already have: "${inputs.baseline.otherMeasuresText}" — shown here as context only, not scored against your recommendations.`);
+  }
+
   const staleness = checkStaleness();
   const assumptions = buildMncAssumptions(inputs, weightedTariff, finalSavingRatePct, isLiable);
   const kpis = buildKpis({

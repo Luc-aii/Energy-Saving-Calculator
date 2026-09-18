@@ -22,9 +22,14 @@ export function buildNarrative(inputs: SmeInputs, result: CalculationResult): st
     : "your site";
 
   const isLiable = result.compliance.some((c) => c.id === "carbon-tax-liable");
+  const siteDescriptor = inputs.universal.numberOfSites > 1 ? `${inputs.universal.numberOfSites} sites` : "Singapore";
+  const fleetDescriptor =
+    inputs.fuelFleet.hasVehicles && inputs.fuelFleet.numberOfVehicles
+      ? ` (including a ${inputs.fuelFleet.numberOfVehicles}-vehicle fleet)`
+      : "";
 
   return [
-    `${inputs.universal.companyName} — a ${inputs.universal.sector} business with ${sizeDescriptor} in Singapore — emits approximately ${formatTonnes(result.totalScope12TCo2e)}/year across Scope 1 and 2.`,
+    `${inputs.universal.companyName} — a ${inputs.universal.sector} business with ${sizeDescriptor} across ${siteDescriptor}${fleetDescriptor} — emits approximately ${formatTonnes(result.totalScope12TCo2e)}/year across Scope 1 and 2.`,
     products && isLiable
       ? `By deploying ${products}, you could save an estimated ${formatSgd(y1.energySavingSgd + y1.carbonTaxSavingSgd)} per year, rising to ${formatSgd(y10.energySavingSgd + y10.carbonTaxSavingSgd)} per year by year 10 as Singapore's carbon price rises to S$${y10.carbonTaxRateUsed.toFixed(0)}/tonne and your direct carbon tax bill shrinks accordingly.`
       : products

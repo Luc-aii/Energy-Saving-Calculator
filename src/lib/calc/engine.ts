@@ -295,6 +295,10 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     };
   }
 
+  if (inputs.baseline.otherMeasuresText) {
+    warnings.push(`You noted you already have: "${inputs.baseline.otherMeasuresText}" — shown here as context only, not scored against your recommendations.`);
+  }
+
   const staleness = checkStaleness();
   const assumptions = buildAssumptions(inputs, tariff, savingRatePct, isLiable);
   const kpis = buildKpis({

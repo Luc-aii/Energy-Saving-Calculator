@@ -328,7 +328,18 @@ export function ResultsPanel({
         <h3 className="text-sm font-bold text-ink">
           Confidence rating: {CONFIDENCE_DOTS[result.confidence.level]} {result.confidence.level}
         </h3>
-        <ul className="mt-2 list-disc pl-5 text-xs text-ink-soft">
+        <p className="mt-1 text-xs text-ink-soft">
+          This grades how reliable the numbers above are, based on the <em>kind</em> of data you gave us — not how big or small your
+          footprint is. A metered electricity bill is more trustworthy than a spend-based estimate, so every saving and every
+          tonne figure on this page is shown as a range: ± {Math.round(result.confidence.rangeWidthPct * 100)}% around the
+          central estimate at this rating. Concretely, the S$
+          {result.confidence.year1Range.low.toLocaleString("en-SG", { maximumFractionDigits: 0 })}–S$
+          {result.confidence.year1Range.high.toLocaleString("en-SG", { maximumFractionDigits: 0 })} Year-1 saving shown at the top
+          of this page comes directly from that range. It automatically gets narrower (High → tighter range) as you replace
+          estimates with real meter readings, invoices, or activity data — it isn&apos;t something you set directly.
+        </p>
+        <p className="mt-2 text-xs font-semibold text-ink">Why this rating specifically:</p>
+        <ul className="mt-1 list-disc pl-5 text-xs text-ink-soft">
           {result.confidence.reasons.map((r, i) => (
             <li key={i}>{r}</li>
           ))}

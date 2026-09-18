@@ -1,14 +1,14 @@
 {
-  "version": "1.1.1",
-  "lastUpdated": "2026-09-17",
-  "source": "IPCC AR5, 100-year GWP (Table 8.A.1) — corrected 2026-09-17: this file was labelled \"IPCC AR6\" but the stored values are actually AR5. All five values (R-410A 2088, R-32 675, R-134a 1430, R-22 1810, SF6 23,500) verified as exact AR5 figures against the GHG Protocol's own reference table (properly text-extracted via pdftotext, not a search summary — https://ghgprotocol.org/sites/default/files/2024-08/Global-Warming-Potential-Values%20(August%202024).pdf, AR4/AR5/AR6 columns: SF6 = 22,800/23,500/24,300). An earlier pass flagged SF6 as unverified based on noisy WebSearch summaries that turned out to be citing the AR4 figure (22,800) as if it were AR5 — resolved now that the actual table was read directly.",
+  "version": "1.2.0",
+  "lastUpdated": "2026-09-18",
+  "source": "IPCC AR5, 100-year GWP (WG1 Chapter 8, Table 8.A.1) — corrected 2026-09-18 against the actual primary-source PDF (not a secondary summary): R-32 675 -> 677 and R-134a 1430 -> 1300. The 675/1430 figures are the AR4 (2007) values, which are extremely widely miscited across HVAC/EPA/regulatory references (including the EU F-Gas Regulation, which still officially uses AR4 GWPs) as if they were AR5 — this file inherited that same mix-up. R-410A (2088) and SF6 (23,500) were independently confirmed correct for AR5 and left unchanged. R-22 was NOT re-verified against the primary table this pass (that table's HCFC-22 row extracted with an implausible lifetime value, suggesting a parsing/alignment error) — kept at 1810 on the strength of an earlier, cleaner citation rather than risk a bad number from unreliable extraction.",
   "ar6Alternative": {
-    "note": "If the team wants to move to AR6 instead: R-32 -> 771 (+14%), R-134a -> ~1530 (+7%), SF6 -> 24,300 (+3%). R-410A and R-22 are unchanged under AR6. Verified against the GHG Protocol reference table, 2026-09-17."
+    "note": "If the team wants to move to AR6 instead: R-32 -> 771, R-134a -> 1530, SF6 -> 24,300. R-410A and R-22 are unchanged under AR6. Verified against the GHG Protocol reference table, 2026-09-17."
   },
   "gases": {
     "R-410A": 2088,
-    "R-32": 675,
-    "R-134a": 1430,
+    "R-32": 677,
+    "R-134a": 1300,
     "R-22": 1810,
     "SF6": 23500
   },

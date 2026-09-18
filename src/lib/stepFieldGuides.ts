@@ -115,7 +115,7 @@ export const MNC_STEP_GUIDES: StepGuide[] = [
     intro: "Your group's Scope 3 footprint — quantified for context, never included in your $ savings, per the Scope 3 methodology.",
     fields: [
       { field: "Purchased goods spend (S$/year)", help: "Aggregate spend across all purchased-goods categories — feeds a spend-based Scope 3 Category 1 estimate." },
-      { field: "Upstream/downstream freight (tonne-km/year)", help: "Split by road/sea/air — each has a very different emissions intensity per tonne-km moved." },
+      { field: "Upstream/downstream freight (tonne-km/year)", help: "Split by road/sea/air — each has a very different emissions intensity per tonne-km moved. Don't have tonne-km data? Leave these blank and use the freight-spend fields instead — less precise, but still a real estimate." },
       { field: "Short-haul / long-haul business travel (pax-km/year)", help: "Enter actual passenger-km if known — this is more precise than the SME mode's flight-count estimate." },
       { field: "Hotel nights/year", help: "Used with an industry-average per-night factor for a rough Category 6 estimate." },
       { field: "Average commute distance / mode split / WFH days", help: "Drives your Category 7 employee commuting estimate across the whole group." },

@@ -265,6 +265,12 @@ export function MncInputForm({ inputs, setInputs, step }: Props) {
         <FieldRow label="Downstream freight — sea (tonne-km/year)">
           <input type="number" className={inputClass} value={inputs.scope3.downstreamFreightTonneKm?.sea ?? ""} onChange={(e) => patchScope3("downstreamFreightTonneKm", { road: inputs.scope3.downstreamFreightTonneKm?.road ?? 0, sea: Number(e.target.value) || 0, air: inputs.scope3.downstreamFreightTonneKm?.air ?? 0 })} />
         </FieldRow>
+        <FieldRow label="Or: upstream freight spend (S$/year)" hint="Only used if you leave the upstream tonne-km fields above blank — less precise, but works if you only know spend.">
+          <input type="number" className={inputClass} value={inputs.scope3.upstreamFreightSpendSgd ?? ""} onChange={(e) => patchScope3("upstreamFreightSpendSgd", numOrUndef(e.target.value))} />
+        </FieldRow>
+        <FieldRow label="Or: downstream freight spend (S$/year)" hint="Only used if you leave the downstream tonne-km fields above blank.">
+          <input type="number" className={inputClass} value={inputs.scope3.downstreamFreightSpendSgd ?? ""} onChange={(e) => patchScope3("downstreamFreightSpendSgd", numOrUndef(e.target.value))} />
+        </FieldRow>
       </SectionCard>
 
       <SectionCard title="Scope 3 — Cat 6, 7 (travel & commuting)">
