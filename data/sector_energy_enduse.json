@@ -1,0 +1,167 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-09-21",
+  "proxy": true,
+  "source": "International/market-survey composite (no Singapore-specific end-use metering study was found) — see per-sector citations below. Not a regulator-published figure like the grid emission factor or carbon tax schedule; shown to the user as an indicative default, editable.",
+  "endUseLabels": {
+    "hvac": "HVAC / space cooling",
+    "refrigeration": "Refrigeration / cold storage",
+    "cooking": "Cooking equipment",
+    "lighting": "Lighting",
+    "hotwater": "Hot water",
+    "laundry": "Laundry",
+    "process": "Process heating / equipment",
+    "compressedAirMotors": "Compressed air & motors",
+    "itLoad": "IT / server load",
+    "cooling": "Precision cooling (CRAC/CRAH/chillers)",
+    "ups": "UPS & power distribution losses",
+    "medicalEquipment": "Medical / sterilization equipment",
+    "materialHandling": "Material handling & dock equipment",
+    "plugLoads": "Plug loads / office equipment",
+    "other": "Other / miscellaneous"
+  },
+  "sectors": {
+    "F&B": {
+      "default": {
+        "endUses": [
+          { "id": "cooking", "pct": 42 },
+          { "id": "hvac", "pct": 32 },
+          { "id": "refrigeration", "pct": 15 },
+          { "id": "lighting", "pct": 8 },
+          { "id": "other", "pct": 3 }
+        ],
+        "sources": [
+          "EIA, 'Food service buildings are highly energy intensive' — https://www.eia.gov/todayinenergy/detail.php?id=60241",
+          "ENERGY STAR for Small Business: Restaurants — https://www.energystar.gov/buildings/resources-audience/small-biz/restaurants"
+        ]
+      }
+    },
+    "Hospitality": {
+      "default": {
+        "endUses": [
+          { "id": "hvac", "pct": 45 },
+          { "id": "lighting", "pct": 17 },
+          { "id": "hotwater", "pct": 12 },
+          { "id": "laundry", "pct": 8 },
+          { "id": "cooking", "pct": 8 },
+          { "id": "other", "pct": 10 }
+        ],
+        "sources": [
+          "ACEEE, 'Energy End-Use Patterns in Full-Service Hotels' — https://www.aceee.org/files/proceedings/2010/data/papers/1984.pdf",
+          "EIA CBECS, Lodging — https://www.eia.gov/consumption/commercial/pba/lodging.php"
+        ]
+      }
+    },
+    "Retail": {
+      "default": {
+        "label": "General / non-food retail",
+        "endUses": [
+          { "id": "hvac", "pct": 40 },
+          { "id": "lighting", "pct": 30 },
+          { "id": "refrigeration", "pct": 5 },
+          { "id": "other", "pct": 25 }
+        ],
+        "sources": [
+          "Rough estimate for general-merchandise retail (no cold-chain) — not sourced to the same degree as the supermarket split below; adjust manually if your split differs."
+        ]
+      },
+      "supermarket": {
+        "label": "Supermarket / grocery (refrigerated cases)",
+        "question": "Does your business include refrigerated retail (supermarket/grocery with cold cases)?",
+        "endUses": [
+          { "id": "refrigeration", "pct": 55 },
+          { "id": "lighting", "pct": 25 },
+          { "id": "hvac", "pct": 7 },
+          { "id": "other", "pct": 13 }
+        ],
+        "sources": [
+          "ScienceDirect, 'Advancing energy efficiency and sustainability in supermarkets' — https://www.sciencedirect.com/science/article/pii/S2352484725001052",
+          "EnergySense (Univ. of Illinois), Supermarkets — https://energysense.uillinois.edu/supermarkets/"
+        ]
+      }
+    },
+    "Manufacturing": {
+      "default": {
+        "endUses": [
+          { "id": "process", "pct": 60 },
+          { "id": "hvac", "pct": 15 },
+          { "id": "compressedAirMotors", "pct": 12 },
+          { "id": "lighting", "pct": 8 },
+          { "id": "other", "pct": 5 }
+        ],
+        "sources": [
+          "US DOE, 'Manufacturing Energy Use and Greenhouse Gas Emissions Analysis' — https://www.energy.gov/documents/energyuseandlossandemissionsintropdf"
+        ]
+      }
+    },
+    "Office/Professional Services": {
+      "default": {
+        "endUses": [
+          { "id": "hvac", "pct": 40 },
+          { "id": "plugLoads", "pct": 25 },
+          { "id": "lighting", "pct": 15 },
+          { "id": "other", "pct": 20 }
+        ],
+        "sources": [
+          "EIA, 'Use of energy in commercial buildings' (CBECS 2018) — https://www.eia.gov/energyexplained/use-of-energy/commercial-buildings.php"
+        ]
+      }
+    },
+    "Healthcare": {
+      "default": {
+        "endUses": [
+          { "id": "hvac", "pct": 45 },
+          { "id": "lighting", "pct": 20 },
+          { "id": "medicalEquipment", "pct": 15 },
+          { "id": "hotwater", "pct": 12 },
+          { "id": "other", "pct": 8 }
+        ],
+        "sources": [
+          "R-Zero, 'Understanding Hospital Energy Usage' — https://rzero.com/blog/understanding-hospital-energy-usage/",
+          "EIA CBECS, Large Hospital — https://www.eia.gov/consumption/commercial/reports/2007/large-hospital.php"
+        ]
+      }
+    },
+    "Data Centre": {
+      "default": {
+        "endUses": [
+          { "id": "itLoad", "pct": 45 },
+          { "id": "cooling", "pct": 40 },
+          { "id": "ups", "pct": 10 },
+          { "id": "other", "pct": 5 }
+        ],
+        "sources": [
+          "Huawei, 'Demystifying PUE' — https://digitalpower.huawei.com/en/blogs/data-center-power-usage",
+          "Eaton, 'Energy consumption in data centers: air versus liquid cooling' — https://www.eaton.com/us/en-us/markets/data-centers/data-center-cooling/efficiency/energy-consumption-in-data-centers-air-versus-liquid-cooling.html"
+        ]
+      }
+    },
+    "Logistics": {
+      "default": {
+        "label": "Standard / ambient warehouse",
+        "endUses": [
+          { "id": "lighting", "pct": 35 },
+          { "id": "materialHandling", "pct": 30 },
+          { "id": "hvac", "pct": 10 },
+          { "id": "other", "pct": 25 }
+        ],
+        "sources": [
+          "Meteor Space, warehouse energy consumption statistics — https://www.meteorspace.com/25-warehouse-energy-consumption-statistics-you-need-to-know/"
+        ]
+      },
+      "coldStorage": {
+        "label": "Cold storage / reefer warehouse",
+        "question": "Do you operate cold storage / refrigerated warehousing?",
+        "endUses": [
+          { "id": "refrigeration", "pct": 75 },
+          { "id": "lighting", "pct": 10 },
+          { "id": "materialHandling", "pct": 8 },
+          { "id": "other", "pct": 7 }
+        ],
+        "sources": [
+          "PatSnap, 'Cold storage energy tech cuts use 30–72%' — https://www.patsnap.com/resources/blog/articles/cold-storage-energy-tech-cuts-use-30-72-by-2026/"
+        ]
+      }
+    }
+  }
+}

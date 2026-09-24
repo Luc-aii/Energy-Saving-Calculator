@@ -1,21 +1,41 @@
 import emissionFactors from "@data/emission_factors.json";
 import carbonTaxSchedule from "@data/carbon_tax_schedule.json";
+import tariffConfig from "@data/tariff_config.json";
+import sectorEnergyEndUse from "@data/sector_energy_enduse.json";
 import type { AssumptionLine } from "@/lib/types/results";
 import type { MncInputs } from "@/lib/types/mncInputs";
 
 export const MNC_DATA_VERSION = "2.3.1";
 
-export function buildMncAssumptions(inputs: MncInputs, weightedTariff: number, savingRatePct: number, isLiable: boolean): AssumptionLine[] {
+export function buildMncAssumptions(inputs: MncInputs, weightedTariff: number, weightedGef: number, savingRatePct: number, isLiable: boolean): AssumptionLine[] {
+  const anySiteGefOverride = inputs.sites.some((s) => s.gridEmissionFactorOverrideKgPerKwh !== undefined) || inputs.defaultGridEmissionFactorOverrideKgPerKwh !== undefined;
+  const anySiteRenewable = inputs.sites.some((s) => s.renewableCoveragePct > 0);
   return [
     {
       label: "Grid Emission Factor",
-      value: `${emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh} kg CO2/kWh`,
-      source: emissionFactors.electricity.singapore.source,
+      value: `${weightedGef.toFixed(4)} kg CO2/kWh (kWh-weighted across sites)${anySiteGefOverride ? " — includes user overrides" : ""}`,
+      source: anySiteGefOverride ? "EMA Singapore reference plus per-site user overrides where entered" : emissionFactors.electricity.singapore.source,
     },
     {
       label: "Weighted-average electricity tariff",
       value: `S$${weightedTariff.toFixed(4)}/kWh across ${inputs.sites.length} site(s)`,
-      source: "Per-site contract rates where entered; SP Group reference tariff otherwise",
+      source: "Per-site contract rates where entered; portfolio default or SP Group reference tariff otherwise",
+    },
+    ...(anySiteRenewable
+      ? [
+          {
+            label: "Renewable Coverage / Green Tariff Premium",
+            value: "One or more sites carry a renewable (REC/PPA/green tariff) coverage % — see per-site breakdown",
+            source: tariffConfig.greenPremium.source,
+          } satisfies AssumptionLine,
+        ]
+      : []),
+    {
+      label: "Energy End-Use Breakdown",
+      value: sectorEnergyEndUse.sectors[inputs.sector as keyof typeof sectorEnergyEndUse.sectors]
+        ? "Sector-typical split shown"
+        : "Not available for this sector",
+      source: sectorEnergyEndUse.source,
     },
     {
       label: "Carbon tax liability",
@@ -39,8 +59,12 @@ export function buildMncAssumptions(inputs: MncInputs, weightedTariff: number, s
     },
     {
       label: "Energy Saving Applied",
-      value: `${(savingRatePct * 100).toFixed(0)}%`,
-      source: "EcoStruxure Building Operation — calibrated against portfolio-wide energy intensity",
+      value: `${(savingRatePct * 100).toFixed(0)}%${
+        inputs.sensitivity.savingsRateOverridePct ? " (user override)" : " (bottom-up from your sector's remaining Energy Conservation Measures)"
+      }`,
+      source: inputs.sensitivity.savingsRateOverridePct
+        ? "User override"
+        : "Energy Conservation Measures catalog, net of measures already implemented — see data/ecm_catalog.json",
     },
     {
       label: "Scope 3 Method",

@@ -12,6 +12,7 @@ export const defaultSmeInputs: SmeInputs = {
     monthlyElectricityKwh: 15000,
     hasSolar: false,
     monthlyNaturalGasGJ: undefined,
+    tariffEscalationPctPerYear: 0,
   },
   fuelFleet: {
     hasVehicles: true,
@@ -29,15 +30,49 @@ export const defaultSmeInputs: SmeInputs = {
     commuteMode: "both",
   },
   baseline: {
-    existingSolutionIds: [],
-    currentEfficiencyInitiatives: [],
     investmentHorizon: "2-5",
     isFinancialInstitution: false,
     isSupplierToSbtiBuyer: false,
+    implementedOrInProgressEcmIds: [],
   },
   estimatedInvestmentSgd: 150000,
   carbonPriceScenario: "base",
-  sensitivity: {
+  sensitivity: {},
+};
+
+/**
+ * A genuinely blank starting point — distinct from defaultSmeInputs, which
+ * pre-fills realistic-looking sample numbers so first-time users see the
+ * tool working. Those samples were silently feeding real results if never
+ * replaced (usability finding H1); this is what "Clear all fields" resets
+ * to, so a user who deliberately starts fresh gets zeros/blanks, not a
+ * different set of invented numbers.
+ */
+export const blankSmeInputs: SmeInputs = {
+  universal: {
+    companyName: "",
+    sector: "Other",
+    numberOfSites: 1,
+  },
+  energy: {
+    hasSolar: false,
     tariffEscalationPctPerYear: 0,
   },
+  fuelFleet: {
+    hasVehicles: false,
+    hasGenerator: false,
+  },
+  refrigerants: {
+    hasRefrigerants: false,
+  },
+  scope3: {},
+  baseline: {
+    investmentHorizon: "none",
+    isFinancialInstitution: false,
+    isSupplierToSbtiBuyer: false,
+    implementedOrInProgressEcmIds: [],
+  },
+  estimatedInvestmentSgd: 0,
+  carbonPriceScenario: "base",
+  sensitivity: {},
 };

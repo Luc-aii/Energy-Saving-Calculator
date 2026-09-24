@@ -36,7 +36,7 @@ export function buildNarrative(inputs: SmeInputs, result: CalculationResult): st
       ? `By deploying ${products}, you could save an estimated ${formatSgd(y1.energySavingSgd)} per year on energy costs. Singapore's carbon tax doesn't apply directly to your facility (that's reserved for large industrial emitters) — its cost is already embedded in the electricity tariff you pay today, so no separate carbon tax line is added here. If you expect tariffs to keep rising as the carbon price climbs toward 2030, model that explicitly with the tariff escalation slider.`
       : "",
     result.paybackYears
-      ? `With your EEG grant applied, your payback period is approximately ${result.paybackYears.toFixed(1)} years.`
+      ? `Your payback period is approximately ${result.paybackYears.toFixed(1)} years (an EEG grant may further shorten this, but isn't included here as eligibility is case-by-case).`
       : "This investment is not projected to pay back within the 10-year horizon at current assumptions — consider a smaller-scope solution.",
     `Over 10 years, the cumulative financial benefit is estimated at ${formatSgd(result.confidence.tenYearRange.low)} to ${formatSgd(result.confidence.tenYearRange.high)}.`,
     result.baselineScope3TCo2e > 0

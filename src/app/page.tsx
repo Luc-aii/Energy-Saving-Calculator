@@ -1,21 +1,44 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { SmeWizard } from "@/components/SmeWizard";
 import { McnWizard } from "@/components/McnWizard";
 import { calculateSme } from "@/lib/calc/engine";
 import { calculateMnc } from "@/lib/calc/mncEngine";
 import { compareScenarios } from "@/lib/calc/scenarioComparison";
 import { compareMncScenarios } from "@/lib/calc/mncScenarioComparison";
-import { defaultSmeInputs } from "@/lib/defaultInputs";
-import { defaultMncInputs } from "@/lib/defaultMncInputs";
+import { defaultSmeInputs, blankSmeInputs } from "@/lib/defaultInputs";
+import { defaultMncInputs, blankMncInputs } from "@/lib/defaultMncInputs";
+import type { SmeInputs } from "@/lib/types/inputs";
+import type { MncInputs } from "@/lib/types/mncInputs";
 
 type Mode = "SME" | "MNC";
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("SME");
-  const [smeInputs, setSmeInputs] = useState(defaultSmeInputs);
-  const [mncInputs, setMncInputs] = useState(defaultMncInputs);
+  const [smeInputs, setSmeInputsRaw] = useState(defaultSmeInputs);
+  const [mncInputs, setMncInputsRaw] = useState(defaultMncInputs);
+  // True until the first edit — drives the "this is sample data" banner (usability finding H1).
+  const [smeTouched, setSmeTouched] = useState(false);
+  const [mncTouched, setMncTouched] = useState(false);
+
+  const setSmeInputs = useCallback<Dispatch<SetStateAction<SmeInputs>>>((action) => {
+    setSmeTouched(true);
+    setSmeInputsRaw(action);
+  }, []);
+  const setMncInputs = useCallback<Dispatch<SetStateAction<MncInputs>>>((action) => {
+    setMncTouched(true);
+    setMncInputsRaw(action);
+  }, []);
+  const clearSme = useCallback(() => {
+    setSmeTouched(true);
+    setSmeInputsRaw(blankSmeInputs);
+  }, []);
+  const clearMnc = useCallback(() => {
+    setMncTouched(true);
+    setMncInputsRaw(blankMncInputs);
+  }, []);
 
   const smeResult = useMemo(() => calculateSme(smeInputs), [smeInputs]);
   const smeScenarios = useMemo(() => compareScenarios(smeInputs), [smeInputs]);
@@ -49,11 +72,25 @@ export default function Home() {
 
       {mode === "SME" ? (
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
-          <SmeWizard inputs={smeInputs} setInputs={setSmeInputs} result={smeResult} scenarioComparison={smeScenarios} />
+          <SmeWizard
+            inputs={smeInputs}
+            setInputs={setSmeInputs}
+            result={smeResult}
+            scenarioComparison={smeScenarios}
+            showSampleBanner={!smeTouched}
+            onClearSample={clearSme}
+          />
         </main>
       ) : (
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
-          <McnWizard inputs={mncInputs} setInputs={setMncInputs} result={mncResult} scenarioComparison={mncScenarios} />
+          <McnWizard
+            inputs={mncInputs}
+            setInputs={setMncInputs}
+            result={mncResult}
+            scenarioComparison={mncScenarios}
+            showSampleBanner={!mncTouched}
+            onClearSample={clearMnc}
+          />
         </main>
       )}
     </div>

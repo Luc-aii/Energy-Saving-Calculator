@@ -2,6 +2,7 @@ import emissionFactors from "@data/emission_factors.json";
 import tariffConfig from "@data/tariff_config.json";
 import scope3Factors from "@data/scope3_factors.json";
 import fuelPrices from "@data/fuel_prices.json";
+import productMapping from "@data/product_mapping.json";
 import type { StalenessWarning } from "@/lib/types/results";
 
 function monthsSince(dateStr: string, now: Date): number {
@@ -16,6 +17,7 @@ export function checkStaleness(now: Date = new Date()): StalenessWarning[] {
     { dataset: "SP Group electricity tariff", lastUpdated: tariffConfig.lastUpdated, thresholdMonths: 4 },
     { dataset: "DEFRA Scope 3 factors", lastUpdated: scope3Factors.lastUpdated, thresholdMonths: 14 },
     { dataset: "Fuel pump prices", lastUpdated: fuelPrices.lastUpdated, thresholdMonths: 3 },
+    { dataset: "Schneider product evidence & saving ranges", lastUpdated: productMapping.lastUpdated, thresholdMonths: 12 },
   ];
 
   const warnings: StalenessWarning[] = [];

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -13,12 +14,16 @@ import {
   YAxis,
 } from "recharts";
 import type { CalculationResult, ScenarioSummary } from "@/lib/types/results";
-import { formatSgd, formatSgdRange, formatTonnes } from "@/lib/format";
+import { formatSgd, formatTonnes } from "@/lib/format";
 import { buildResultContext } from "@/lib/ai/resultContext";
 import { CalibrationCurveChart } from "./CalibrationCurve";
+import { EnergyEndUseChart } from "./EnergyEndUseChart";
+import { SectorSpotlight } from "./SectorSpotlight";
+import { getTopEndUse } from "@/lib/calc/ecm";
 import { KpiDashboard } from "./KpiDashboard";
 import { CtaPanel } from "./CtaPanel";
 import { AiSummaryCard } from "./AiSummaryCard";
+import { ResultsHero } from "./ResultsHero";
 
 const CONFIDENCE_DOTS: Record<string, string> = {
   High: "●●●●●",
@@ -41,6 +46,19 @@ export function ResultsPanel({
 }) {
   const isLiable = result.compliance.some((c) => c.id === "carbon-tax-liable");
   const aiContext = buildResultContext(companyName, mode, sector, result);
+  const [activeTab, setActiveTab] = useState<"general" | "indepth">("general");
+  // Forced true for the duration of a PDF capture (see CtaPanel's onBeforePdf/onAfterPdf) so the
+  // exported document always contains both tabs, not just whichever one happened to be open on screen.
+  const [printMode, setPrintMode] = useState(false);
+  const showGeneral = printMode || activeTab === "general";
+  const showIndepth = printMode || activeTab === "indepth";
+
+  // Expand every ECM "how this works" disclosure for the duration of a PDF capture, so the exported
+  // document contains the full mechanism/math, not just whichever rows the viewer happened to expand.
+  useEffect(() => {
+    if (!printMode) return;
+    document.querySelectorAll<HTMLDetailsElement>(".ecm-detail").forEach((d) => (d.open = true));
+  }, [printMode]);
 
   const chartData = result.yearRows.map((r) => ({
     year: `Y${r.year}`,
@@ -54,7 +72,6 @@ export function ResultsPanel({
     year: `Y${r.year} (${r.calendarYear})`,
     "Energy saving": Math.round(r.energySavingSgd),
     "Carbon tax saving": Math.round(r.carbonTaxSavingSgd),
-    Grant: Math.round(r.grantSgd),
   }));
 
   const carbonPriceData = result.yearRows
@@ -77,62 +94,140 @@ export function ResultsPanel({
       )}
 
       <div id="printable-report" className="flex flex-col gap-4">
-      {/* Cover summary */}
-      <div className="rounded-2xl border border-brand-100 bg-brand-50 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-          Decarbonisation Investment Illustration
+      <div className="no-print flex gap-1 self-start rounded-full border border-border bg-card p-1 text-sm">
+        <button
+          onClick={() => setActiveTab("general")}
+          className={`rounded-full px-3.5 py-1.5 font-medium transition ${activeTab === "general" ? "bg-brand-500 text-white" : "text-ink-soft hover:bg-brand-50"}`}
+        >
+          General
+        </button>
+        <button
+          onClick={() => setActiveTab("indepth")}
+          className={`rounded-full px-3.5 py-1.5 font-medium transition ${activeTab === "indepth" ? "bg-brand-500 text-white" : "text-ink-soft hover:bg-brand-50"}`}
+        >
+          In-depth
+        </button>
+      </div>
+
+      {showGeneral && <ResultsHero companyName={companyName} result={result} />}
+
+      {showIndepth && (
+      <>
+      {/*
+        Ordered most → least important to a decision-maker reading past the hero: the action plan
+        and its money math first, then the emissions/energy context that explains *why*, then
+        supporting charts and methodology, then compliance/notes/assumptions last. Sections gate on
+        having real data so an empty/irrelevant block never takes up space.
+      */}
+
+      {/* ECM breakdown — every further-opportunity measure, not just the Top 3 highlighted above. Each row expands
+          into how that specific measure works and the exact math behind its kWh figure, not just the end number.
+          Top-3 recommended measures are pulled to the front and badged so it's obvious which of these rows are
+          the ones featured in the hero, rather than making the reader cross-reference the two lists themselves. */}
+      {result.ecmResult && (() => {
+        const top3Rank = new Map(result.topEcmRecommendations.map((t, i) => [t.ecmId, i + 1]));
+        const sorted = result.ecmResult.breakdown.slice().sort((a, b) => (top3Rank.get(a.ecmId) ?? 99) - (top3Rank.get(b.ecmId) ?? 99));
+        const implementedCount = result.alreadyImplementedEcm?.ids.length ?? 0;
+        return (
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+            <h3 className="mb-1 text-sm font-bold text-ink">
+              How we got to {(result.ecmResult.ratePctMid * 100).toFixed(0)}%
+            </h3>
+            <p className="mb-1 text-xs text-ink-soft">
+              Bottom-up from your sector&apos;s Energy Conservation Measures — range {(result.ecmResult.ratePctLow * 100).toFixed(0)}–{(result.ecmResult.ratePctHigh * 100).toFixed(0)}%, replacing the sector calibration curve. Click a measure for the mechanism and the exact calculation behind its number.
+            </p>
+            <p className="mb-3 text-xs text-ink-soft">
+              {implementedCount > 0
+                ? `Excludes the ${implementedCount} measure(s) you told us you already have or are rolling out — those are credited separately in "You're already saving" above, not counted as further opportunity here.`
+                : "You haven't told us you have any of these measures yet, so every catalog measure for your sector appears below as further opportunity."}
+              {" "}The first {result.topEcmRecommendations.length} are the same Top {result.topEcmRecommendations.length} highlighted above; the rest are the remaining sector-relevant measures.
+            </p>
+            <div className="flex flex-col gap-2">
+              {sorted.map((b) => {
+                const rank = top3Rank.get(b.ecmId);
+                return (
+                  <details
+                    key={b.ecmId}
+                    className={`ecm-detail group rounded-lg border p-3 open:bg-brand-50/30 ${rank ? "border-brand-300 bg-brand-50/20" : "border-border"}`}
+                  >
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="flex items-center gap-2">
+                        {rank && (
+                          <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-bold text-white">#{rank} recommended</span>
+                        )}
+                        <span className="font-medium text-ink">{b.label}</span>
+                      </span>
+                      <span className="flex items-center gap-2 text-ink-soft">
+                        <span className="rounded-full border border-border bg-white px-2 py-0.5 text-[10px] font-medium">{b.effortTier} effort</span>
+                        <span className="rounded-full border border-border bg-white px-2 py-0.5 text-[10px] font-medium">
+                          {b.certainty === "variable" ? "varies by site" : "well-documented"}
+                        </span>
+                        <span>{(b.contributionToRatePctMid * 100).toFixed(1)} pts</span>
+                        <span className="font-semibold text-ink">{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr</span>
+                        <span className="text-ink-soft transition group-open:rotate-180">▾</span>
+                      </span>
+                    </summary>
+                    <div className="mt-2 border-t border-border pt-2 text-xs text-ink-soft">
+                      <p className="italic">{b.evidence}</p>
+                      <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink">
+                        {b.endUseLabel} is {b.endUseSharePct.toFixed(0)}% of your electricity ≈ {Math.round(b.endUseKwh).toLocaleString("en-SG")} kWh/yr
+                        <br />
+                        × this measure&apos;s {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% saving on {b.endUseLabel.toLowerCase()} energy (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%)
+                        <br />
+                        = <strong>{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr saved</strong>, ≈{(b.contributionToRatePctMid * 100).toFixed(1)} points of your overall electricity
+                      </p>
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Year-by-year table */}
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+        <h3 className="mb-2 text-sm font-bold text-ink">Annual benefit illustration</h3>
+        <table className="w-full min-w-[640px] text-left text-xs">
+          <thead>
+            <tr className="border-b border-border text-ink-soft">
+              <th className="py-1 pr-2">Year</th>
+              <th className="py-1 pr-2">Energy saving</th>
+              <th className="py-1 pr-2">Carbon tax saving</th>
+              <th className="py-1 pr-2">Rate used</th>
+              <th className="py-1 pr-2">Total</th>
+              <th className="py-1 pr-2">Cumulative</th>
+              <th className="py-1 pr-2">CO₂e avoided</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.yearRows.map((r) => (
+              <tr key={r.year} className="border-b border-border">
+                <td className="py-1 pr-2 font-medium">{r.calendarYear}</td>
+                <td className="py-1 pr-2">{formatSgd(r.energySavingSgd)}</td>
+                <td className="py-1 pr-2">{formatSgd(r.carbonTaxSavingSgd)}</td>
+                <td className="py-1 pr-2">S${r.carbonTaxRateUsed.toFixed(0)}/t</td>
+                <td className="py-1 pr-2 font-medium">{formatSgd(r.totalSavingSgd)}</td>
+                <td className="py-1 pr-2">{formatSgd(r.cumulativeSavingSgd)}</td>
+                <td className="py-1 pr-2">{Math.round(r.carbonAvoidedTCo2e)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-xs text-ink-soft">
+          Net investment: {formatSgd(result.netInvestmentSgd)} (excludes any EEG grant — see Notes below, eligibility is case-by-case)
         </p>
-        <h2 className="mt-1 text-lg font-bold text-ink">{companyName}</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Stat label="Your current carbon cost / year" value={formatSgd(result.currentAnnualCarbonCostSgd)} />
-          <Stat label="Estimated annual saving (Year 1)" value={formatSgdRange(result.confidence.year1Range.low, result.confidence.year1Range.high)} />
-          <Stat
-            label="Estimated payback period"
-            value={result.paybackYears ? `${result.paybackYears.toFixed(1)} years` : "Beyond 10-year horizon"}
-          />
-          <Stat label="10-year cumulative saving" value={formatSgdRange(result.confidence.tenYearRange.low, result.confidence.tenYearRange.high)} />
-          <Stat label="CO₂e avoided / year (Year 1)" value={formatTonnes(result.yearRows[0].carbonAvoidedTCo2e)} />
-          <Stat label="Confidence level" value={`${CONFIDENCE_DOTS[result.confidence.level]}  ${result.confidence.level}`} />
-        </div>
-      </div>
-
-      <AiSummaryCard context={aiContext} fallbackNarrative={result.narrative} />
-
-      {/* Baseline emissions */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="text-sm font-bold text-ink">Your current footprint</h3>
-        <div className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <MiniStat label="Scope 1" value={formatTonnes(result.baselineScope1TCo2e)} />
-          <MiniStat label="Scope 2" value={formatTonnes(result.baselineScope2TCo2e)} />
-          <MiniStat label="Total Scope 1+2" value={formatTonnes(result.totalScope12TCo2e)} />
-          <MiniStat label="Scope 3 (context only)" value={formatTonnes(result.baselineScope3TCo2e)} />
-        </div>
-        <p className="mt-3 text-xs text-ink-soft">{result.sectorPositionLabel} — assumed energy saving rate {(result.energySavingRatePct * 100).toFixed(0)}%</p>
-        <div className="mt-3">
-          <CalibrationCurveChart curve={result.calibration} />
-        </div>
-      </div>
-
-      {/* KPI dashboard */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="text-sm font-bold text-ink">Energy intensity KPI dashboard</h3>
-        <p className="mb-3 text-xs text-ink-soft">Hover a card for what it means and how to improve it. Only energy/carbon intensity have a sourced sector benchmark bar.</p>
-        <KpiDashboard kpis={result.kpis} />
-      </div>
-
-      {/* Target comparison */}
-      {result.targetComparison && (
-        <div className={`rounded-2xl border p-4 ${result.targetComparison.onTrack ? "border-brand-100 bg-brand-50" : "border-red-200 bg-red-50"}`}>
-          <h3 className="text-sm font-bold text-ink">
-            {result.targetComparison.onTrack ? "✅ On track for your target" : "⚠ Behind your target"}
-          </h3>
+        {result.suggestedInvestment && (
           <p className="mt-1 text-xs text-ink-soft">
-            Target: {result.targetComparison.targetPct}% reduction by {result.targetComparison.targetYear} → requires avoiding{" "}
-            {formatTonnes(result.targetComparison.requiredAnnualAvoidedTCo2e)}/year. At this trajectory you avoid{" "}
-            {formatTonnes(result.targetComparison.projectedAnnualAvoidedTCo2e)}/year by then.
+            Rough order-of-magnitude for your selected ECMs: {formatSgd(result.suggestedInvestment.lowSgd)}–{formatSgd(result.suggestedInvestment.highSgd)} — not a quote, just a sanity check on the typed figure above (see Notes below if these are far apart).
           </p>
-        </div>
-      )}
+        )}
+        {!isLiable && (
+          <p className="mt-1 text-xs text-ink-soft">
+            &quot;Carbon tax saving&quot; is S$0 throughout: your facility isn&apos;t a direct NEA/IRAS taxpayer, so that cost is already folded into the energy saving above rather than counted twice.
+          </p>
+        )}
+      </div>
 
       {/* Chart */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
@@ -157,6 +252,168 @@ export function ResultsPanel({
         </div>
       </div>
 
+      {/* Conservative / Base / Optimistic comparison */}
+      {scenarioComparison.length > 0 && (
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+          <h3 className="mb-2 text-sm font-bold text-ink">Conservative / base / optimistic</h3>
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-border text-ink-soft">
+                <th className="py-1 pr-2"></th>
+                {scenarioComparison.map((s) => (
+                  <th key={s.scenario} className="py-1 pr-2 capitalize">
+                    {s.scenario}
+                    {s.scenario === "base" && " (selected)"}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border">
+                <td className="py-1 pr-2 text-ink-soft">Energy saving rate</td>
+                {scenarioComparison.map((s) => (
+                  <td key={s.scenario} className="py-1 pr-2 font-medium">{(s.savingsRateUsed * 100).toFixed(0)}%</td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-1 pr-2 text-ink-soft">Year 1 total</td>
+                {scenarioComparison.map((s) => (
+                  <td key={s.scenario} className="py-1 pr-2 font-medium">{formatSgd(s.year1TotalSgd)}</td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-1 pr-2 text-ink-soft">10-year total</td>
+                {scenarioComparison.map((s) => (
+                  <td key={s.scenario} className="py-1 pr-2 font-medium">{formatSgd(s.tenYearCumulativeSgd)}</td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-1 pr-2 text-ink-soft">Payback</td>
+                {scenarioComparison.map((s) => (
+                  <td key={s.scenario} className="py-1 pr-2 font-medium">{s.paybackYears ? `${s.paybackYears.toFixed(1)} yrs` : "—"}</td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Products */}
+      {result.products.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+          <h3 className="mb-2 text-sm font-bold text-ink">Recommended Schneider solution package</h3>
+          <div className="flex flex-col gap-3">
+            {result.products.map((p) => (
+              <div key={p.id} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-ink">{p.name}</span>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-brand-600">
+                    {p.role}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-ink-soft">{p.covers}</p>
+                {p.savingRange && (
+                  <p className="mt-1 text-xs text-ink-soft">
+                    Typical saving: {(p.savingRange.low * 100).toFixed(0)}–{(p.savingRange.high * 100).toFixed(0)}%
+                  </p>
+                )}
+                <p className="mt-1 text-xs italic text-ink-soft">{p.evidence}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Baseline emissions */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+        <h3 className="text-sm font-bold text-ink">Your current footprint</h3>
+        <div className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <MiniStat label="Scope 1" value={formatTonnes(result.baselineScope1TCo2e)} />
+          <MiniStat label="Scope 2" value={formatTonnes(result.baselineScope2TCo2e)} />
+          <MiniStat label="Total Scope 1+2" value={formatTonnes(result.totalScope12TCo2e)} />
+          <MiniStat label="Scope 3 (context only)" value={formatTonnes(result.baselineScope3TCo2e)} />
+        </div>
+        {result.totalScope12TCo2e > 0 && (
+          <p className="mt-3 rounded-lg bg-brand-50 p-2.5 text-xs text-brand-700">
+            Of that, the measures below could avoid <strong>{formatTonnes(result.monthlyCo2eAvoidedTonnesMid * 12)}/year</strong> — about{" "}
+            <strong>{Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}%</strong> of what you have today.
+          </p>
+        )}
+        <p className="mt-3 text-xs text-ink-soft">{result.sectorPositionLabel} — assumed energy saving rate {(result.energySavingRatePct * 100).toFixed(0)}%</p>
+        <div className="mt-3">
+          <CalibrationCurveChart curve={result.calibration} />
+        </div>
+        {(result.emissionsBreakdown.scope1BySource.length > 0 || result.emissionsBreakdown.scope3ByCategory.length > 0) && (
+          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-border pt-3 sm:grid-cols-2">
+            {result.emissionsBreakdown.scope1BySource.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-ink">Scope 1 — by source</p>
+                <EmissionsBreakdownBars items={result.emissionsBreakdown.scope1BySource} total={result.baselineScope1TCo2e} />
+              </div>
+            )}
+            {result.emissionsBreakdown.scope3ByCategory.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-ink">Scope 3 — by category</p>
+                <EmissionsBreakdownBars items={result.emissionsBreakdown.scope3ByCategory} total={result.baselineScope3TCo2e} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Energy end-use breakdown */}
+      {result.energyEndUseBreakdown.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+          <h3 className="text-sm font-bold text-ink">Where your energy goes</h3>
+          <p className="mb-2 mt-0.5 text-xs text-ink-soft">Sector-typical split (indicative, international benchmark) — drives which Energy Conservation Measures are recommended.</p>
+          <SectorSpotlight sector={sector} topEndUse={getTopEndUse(result.energyEndUseBreakdown)} />
+          <EnergyEndUseChart items={result.energyEndUseBreakdown} />
+        </div>
+      )}
+
+      {/* Target comparison */}
+      {result.targetComparison && (
+        <div className={`rounded-2xl border p-4 ${result.targetComparison.onTrack ? "border-brand-100 bg-brand-50" : "border-red-200 bg-red-50"}`}>
+          <h3 className="text-sm font-bold text-ink">
+            {result.targetComparison.onTrack ? "✅ On track for your target" : "⚠ Behind your target"}
+          </h3>
+          <p className="mt-1 text-xs text-ink-soft">
+            Target: {result.targetComparison.targetPct}% reduction by {result.targetComparison.targetYear} → requires avoiding{" "}
+            {formatTonnes(result.targetComparison.requiredAnnualAvoidedTCo2e)}/year. At this trajectory you avoid{" "}
+            {formatTonnes(result.targetComparison.projectedAnnualAvoidedTCo2e)}/year by then.
+          </p>
+        </div>
+      )}
+
+      {/* Clean vs. dirty energy spend */}
+      {(result.energyCostBreakdown.cleanKwh > 0 || result.energyCostBreakdown.scope2LocationBasedTCo2e !== result.energyCostBreakdown.scope2MarketBasedTCo2e) && (
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+          <h3 className="text-sm font-bold text-ink">Clean vs. dirty energy spend</h3>
+          <p className="mb-2 mt-0.5 text-xs text-ink-soft">
+            Market-based accounting: your REC/PPA/green-tariff-covered share is priced at a premium and treated as zero-emission; the physical grid mix (location-based) is shown alongside for context.
+          </p>
+          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <MiniStat label="Dirty energy payment" value={formatSgd(result.energyCostBreakdown.dirtyPaymentSgd)} />
+            <MiniStat label="Clean energy payment" value={formatSgd(result.energyCostBreakdown.cleanPaymentSgd)} />
+            <MiniStat label="Green premium paid" value={formatSgd(result.energyCostBreakdown.greenPremiumPaidSgd)} />
+            <MiniStat label="Renewable share" value={`${((result.energyCostBreakdown.cleanKwh / Math.max(result.energyCostBreakdown.cleanKwh + result.energyCostBreakdown.dirtyKwh, 1)) * 100).toFixed(0)}%`} />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <MiniStat label="Scope 2 — market-based (used in $ savings)" value={formatTonnes(result.energyCostBreakdown.scope2MarketBasedTCo2e)} />
+            <MiniStat label="Scope 2 — location-based (physical grid mix)" value={formatTonnes(result.energyCostBreakdown.scope2LocationBasedTCo2e)} />
+          </div>
+        </div>
+      )}
+
+      {/* KPI dashboard */}
+      {result.kpis.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+          <h3 className="text-sm font-bold text-ink">Energy intensity KPI dashboard</h3>
+          <p className="mb-3 text-xs text-ink-soft">Hover a card for what it means and how to improve it. Only energy/carbon intensity have a sourced sector benchmark bar.</p>
+          <KpiDashboard kpis={result.kpis} />
+        </div>
+      )}
+
       {/* Chart: what's driving your savings */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
         <h3 className="text-sm font-bold text-ink">What&apos;s driving your savings</h3>
@@ -170,7 +427,6 @@ export function ResultsPanel({
               <Legend />
               <Bar dataKey="Energy saving" stackId="a" fill="#059669" isAnimationActive={false} />
               <Bar dataKey="Carbon tax saving" stackId="a" fill="#0891b2" isAnimationActive={false} />
-              <Bar dataKey="Grant" stackId="a" fill="#d97706" isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -197,115 +453,6 @@ export function ResultsPanel({
         </div>
       </div>
 
-      {/* Year-by-year table */}
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="mb-2 text-sm font-bold text-ink">Annual benefit illustration</h3>
-        <table className="w-full min-w-[640px] text-left text-xs">
-          <thead>
-            <tr className="border-b border-border text-ink-soft">
-              <th className="py-1 pr-2">Year</th>
-              <th className="py-1 pr-2">Energy saving</th>
-              <th className="py-1 pr-2">Carbon tax saving</th>
-              <th className="py-1 pr-2">Rate used</th>
-              <th className="py-1 pr-2">Grant</th>
-              <th className="py-1 pr-2">Total</th>
-              <th className="py-1 pr-2">Cumulative</th>
-              <th className="py-1 pr-2">CO₂e avoided</th>
-            </tr>
-          </thead>
-          <tbody>
-            {result.yearRows.map((r) => (
-              <tr key={r.year} className="border-b border-border">
-                <td className="py-1 pr-2 font-medium">{r.calendarYear}</td>
-                <td className="py-1 pr-2">{formatSgd(r.energySavingSgd)}</td>
-                <td className="py-1 pr-2">{formatSgd(r.carbonTaxSavingSgd)}</td>
-                <td className="py-1 pr-2">S${r.carbonTaxRateUsed.toFixed(0)}/t</td>
-                <td className="py-1 pr-2">{r.grantSgd > 0 ? formatSgd(r.grantSgd) : "—"}</td>
-                <td className="py-1 pr-2 font-medium">{formatSgd(r.totalSavingSgd)}</td>
-                <td className="py-1 pr-2">{formatSgd(r.cumulativeSavingSgd)}</td>
-                <td className="py-1 pr-2">{Math.round(r.carbonAvoidedTCo2e)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="mt-2 text-xs text-ink-soft">
-          Net investment after EEG grant: {formatSgd(result.netInvestmentSgd)}
-        </p>
-        {!isLiable && (
-          <p className="mt-1 text-xs text-ink-soft">
-            &quot;Carbon tax saving&quot; is S$0 throughout: your facility isn&apos;t a direct NEA/IRAS taxpayer, so that cost is already folded into the energy saving above rather than counted twice.
-          </p>
-        )}
-      </div>
-
-      {/* Conservative / Base / Optimistic comparison */}
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="mb-2 text-sm font-bold text-ink">Conservative / base / optimistic</h3>
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-border text-ink-soft">
-              <th className="py-1 pr-2"></th>
-              {scenarioComparison.map((s) => (
-                <th key={s.scenario} className="py-1 pr-2 capitalize">
-                  {s.scenario}
-                  {s.scenario === "base" && " (selected)"}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-border">
-              <td className="py-1 pr-2 text-ink-soft">Energy saving rate</td>
-              {scenarioComparison.map((s) => (
-                <td key={s.scenario} className="py-1 pr-2 font-medium">{(s.savingsRateUsed * 100).toFixed(0)}%</td>
-              ))}
-            </tr>
-            <tr className="border-b border-border">
-              <td className="py-1 pr-2 text-ink-soft">Year 1 total</td>
-              {scenarioComparison.map((s) => (
-                <td key={s.scenario} className="py-1 pr-2 font-medium">{formatSgd(s.year1TotalSgd)}</td>
-              ))}
-            </tr>
-            <tr className="border-b border-border">
-              <td className="py-1 pr-2 text-ink-soft">10-year total</td>
-              {scenarioComparison.map((s) => (
-                <td key={s.scenario} className="py-1 pr-2 font-medium">{formatSgd(s.tenYearCumulativeSgd)}</td>
-              ))}
-            </tr>
-            <tr>
-              <td className="py-1 pr-2 text-ink-soft">Payback</td>
-              {scenarioComparison.map((s) => (
-                <td key={s.scenario} className="py-1 pr-2 font-medium">{s.paybackYears ? `${s.paybackYears.toFixed(1)} yrs` : "—"}</td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Products */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="mb-2 text-sm font-bold text-ink">Recommended Schneider solution package</h3>
-        <div className="flex flex-col gap-3">
-          {result.products.map((p) => (
-            <div key={p.id} className="rounded-lg border border-border p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-ink">{p.name}</span>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-brand-600">
-                  {p.role}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-ink-soft">{p.covers}</p>
-              {p.savingRange && (
-                <p className="mt-1 text-xs text-ink-soft">
-                  Typical saving: {(p.savingRange.low * 100).toFixed(0)}–{(p.savingRange.high * 100).toFixed(0)}%
-                </p>
-              )}
-              <p className="mt-1 text-xs italic text-ink-soft">{p.evidence}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Stated assumptions */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
         <h3 className="mb-2 text-sm font-bold text-ink">Illustration basis & assumptions</h3>
@@ -328,7 +475,10 @@ export function ResultsPanel({
         <h3 className="text-sm font-bold text-ink">
           Confidence rating: {CONFIDENCE_DOTS[result.confidence.level]} {result.confidence.level}
         </h3>
-        <p className="mt-1 text-xs text-ink-soft">
+        <p className="mt-1 text-xs font-medium text-ink">
+          In short: how solid your input data is (metered → spend-based → floor-area-estimated), not how big your savings are — it sets how wide the ± range is on every $ and tCO2e figure above.
+        </p>
+        <p className="mt-2 text-xs text-ink-soft">
           This grades how reliable the numbers above are, based on the <em>kind</em> of data you gave us — not how big or small your
           footprint is. A metered electricity bill is more trustworthy than a spend-based estimate, so every saving and every
           tonne figure on this page is shown as a range: ± {Math.round(result.confidence.rangeWidthPct * 100)}% around the
@@ -378,18 +528,14 @@ export function ResultsPanel({
           </ul>
         </div>
       )}
+
+      {/* Summary reads best as a closing wrap-up, especially in the exported PDF — kept last, not competing with the figures above for attention. */}
+      <AiSummaryCard context={aiContext} fallbackNarrative={result.narrative} />
+      </>
+      )}
       </div>
 
-      <CtaPanel companyName={companyName} />
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs text-brand-600">{label}</p>
-      <p className="text-lg font-bold text-ink">{value}</p>
+      <CtaPanel companyName={companyName} onBeforePdf={() => setPrintMode(true)} onAfterPdf={() => setPrintMode(false)} />
     </div>
   );
 }
@@ -399,6 +545,28 @@ function MiniStat({ label, value }: { label: string; value: string }) {
     <div className="rounded-md bg-brand-50 p-2">
       <p className="text-[10px] uppercase tracking-wide text-ink-soft">{label}</p>
       <p className="text-sm font-bold text-ink">{value}</p>
+    </div>
+  );
+}
+
+/** Per-source Scope 1 / per-category Scope 3 breakdown — totals alone didn't show a user *where* their emissions come from (usability finding M6). */
+function EmissionsBreakdownBars({ items, total }: { items: { id: string; label: string; tCo2e: number }[]; total: number }) {
+  return (
+    <div className="mt-1.5 flex flex-col gap-1.5">
+      {items.map((item) => {
+        const pct = total > 0 ? (item.tCo2e / total) * 100 : 0;
+        return (
+          <div key={item.id} className="flex items-center gap-2 text-[11px]">
+            <span className="w-28 shrink-0 truncate text-ink-soft" title={item.label}>
+              {item.label}
+            </span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/5">
+              <div className="h-1.5 rounded-full bg-brand-400" style={{ width: `${Math.min(Math.max(pct, 0), 100)}%` }} />
+            </div>
+            <span className="w-16 shrink-0 text-right font-medium text-ink">{formatTonnes(item.tCo2e)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

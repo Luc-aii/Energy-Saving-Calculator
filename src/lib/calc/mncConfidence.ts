@@ -25,6 +25,14 @@ export function scoreMncConfidence(inputs: MncInputs): ConfidenceResult {
     reasons.push("One or more sites use the reference tariff instead of an actual contract rate");
   }
 
+  const sitesEstimatedFromFloorArea = inputs.sites.filter((s) => !s.monthlyElectricityKwh && s.floorAreaM2).length;
+  if (sitesEstimatedFromFloorArea > 0) {
+    // Weakest electricity data source: a sector-average kWh/m² multiplied by floor area, not
+    // anything the site actually measured or paid — inherits into every downstream figure.
+    level = "Low";
+    reasons.push(`${sitesEstimatedFromFloorArea} site(s) had no monthly electricity entered — consumption was estimated from floor area × a sector-average energy intensity, the least certain of the data sources this tool supports`);
+  }
+
   if (inputs.scope3.purchasedGoodsSpendByCategorySgd.length > 0 || inputs.scope3.upstreamFreightSpendSgd || inputs.scope3.downstreamFreightSpendSgd) {
     level = "Low";
     reasons.push(`Scope 3 Cat 1/4/9 uses spend-based EEIO factors (±${Math.round(RANGE_WIDTH_PCT.Low * 100)}%), not supplier- or shipment-level activity data`);

@@ -3,6 +3,7 @@ import carbonTaxSchedule from "@data/carbon_tax_schedule.json";
 import grantsData from "@data/grants.json";
 import tariffConfig from "@data/tariff_config.json";
 import scope3Factors from "@data/scope3_factors.json";
+import sectorEnergyEndUse from "@data/sector_energy_enduse.json";
 import type { AssumptionLine } from "@/lib/types/results";
 import type { SmeInputs } from "@/lib/types/inputs";
 
@@ -14,17 +15,17 @@ function latestTariffPeriodLabel(): string {
   return latest ? `SP Group ${latest.period}` : `SP Group, updated ${tariffConfig.lastUpdated}`;
 }
 
-export function buildAssumptions(inputs: SmeInputs, tariff: number, savingRatePct: number, isLiable: boolean): AssumptionLine[] {
+export function buildAssumptions(inputs: SmeInputs, tariff: number, gef: number, savingRatePct: number, isLiable: boolean): AssumptionLine[] {
   const eeg = grantsData.grants.find((g) => g.id === "eeg-base")!;
   return [
     {
       label: "Grid Emission Factor",
-      value: `${emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh} kg CO2/kWh`,
-      source: emissionFactors.electricity.singapore.source,
+      value: `${gef} kg CO2/kWh${inputs.energy.gridEmissionFactorOverrideKgPerKwh !== undefined ? " (user override)" : ""}`,
+      source: inputs.energy.gridEmissionFactorOverrideKgPerKwh !== undefined ? "User-entered" : emissionFactors.electricity.singapore.source,
     },
     {
       label: "Electricity Tariff",
-      value: `S$${tariff.toFixed(4)}/kWh${inputs.sensitivity.tariffOverrideSgdPerKwh ? " (user override)" : ""}`,
+      value: `S$${tariff.toFixed(4)}/kWh${inputs.energy.tariffOverrideSgdPerKwh ? " (user override)" : ""}`,
       source: latestTariffPeriodLabel(),
     },
     {
@@ -54,18 +55,40 @@ export function buildAssumptions(inputs: SmeInputs, tariff: number, savingRatePc
     },
     {
       label: "Energy Saving Applied",
-      value: `${(savingRatePct * 100).toFixed(0)}%${inputs.sensitivity.savingsRateOverridePct ? " (user override)" : ""}`,
-      source: "EcoStruxure Building Operation — calibrated against sector benchmark position",
+      value: `${(savingRatePct * 100).toFixed(0)}%${
+        inputs.sensitivity.savingsRateOverridePct ? " (user override)" : " (bottom-up from your sector's remaining Energy Conservation Measures)"
+      }`,
+      source: inputs.sensitivity.savingsRateOverridePct
+        ? "User override"
+        : "Energy Conservation Measures catalog, net of measures already implemented — see data/ecm_catalog.json",
     },
     {
       label: "EEG Grant",
-      value: `Up to S$${eeg.maxAmountSgd?.toLocaleString()} (${(eeg.coFundRate! * 100).toFixed(0)}% co-fund)`,
+      value: `Up to S$${eeg.maxAmountSgd?.toLocaleString()} (${(eeg.coFundRate! * 100).toFixed(0)}% co-fund) — informational only, NOT included in the $ savings/payback above (case-by-case eligibility)`,
       source: `EnterpriseSG, valid to ${eeg.validUntil}`,
     },
     {
       label: "Scope 3 Method",
       value: "Spend-based (EEIO) — quantified only, not included in $ saving",
       source: scope3Factors.source,
+    },
+    ...(inputs.energy.renewableCoveragePct
+      ? [
+          {
+            label: "Renewable Coverage / Green Tariff Premium",
+            value: `${Math.min(Math.max(inputs.energy.renewableCoveragePct, 0), 100).toFixed(0)}% at +S$${(
+              inputs.energy.greenTariffPremiumOverrideSgdPerKwh ?? tariffConfig.greenPremium.typicalSgdPerKwh
+            ).toFixed(4)}/kWh${inputs.energy.greenTariffPremiumOverrideSgdPerKwh ? " (user override)" : ""}`,
+            source: tariffConfig.greenPremium.source,
+          } satisfies AssumptionLine,
+        ]
+      : []),
+    {
+      label: "Energy End-Use Breakdown",
+      value: sectorEnergyEndUse.sectors[inputs.universal.sector as keyof typeof sectorEnergyEndUse.sectors]
+        ? `Sector-typical split shown${inputs.energy.customEndUsePct ? " (user-adjusted)" : ""}`
+        : "Not available for this sector",
+      source: sectorEnergyEndUse.source,
     },
   ];
 }

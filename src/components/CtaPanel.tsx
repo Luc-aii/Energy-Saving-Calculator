@@ -10,7 +10,16 @@ import { inputClass } from "./FormField";
  * actions are front-end-only stubs that capture lead details locally and
  * show a confirmation, with no network call.
  */
-export function CtaPanel({ companyName }: { companyName: string }) {
+export function CtaPanel({
+  companyName,
+  onBeforePdf,
+  onAfterPdf,
+}: {
+  companyName: string;
+  /** Results are tabbed (General / In-depth) on screen — the PDF needs both, so the parent forces both tabs to render for the duration of the capture. */
+  onBeforePdf?: () => void;
+  onAfterPdf?: () => void;
+}) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,6 +41,9 @@ export function CtaPanel({ companyName }: { companyName: string }) {
       setShowLeadForm(false);
       setGeneratingPdf(true);
       try {
+        onBeforePdf?.();
+        // Let React commit and paint the "both tabs visible" state before capturing.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         // jsPDF + html2canvas-pro are hefty and only needed here — code-split them out of the main bundle.
         const { downloadElementAsPdf } = await import("@/lib/pdf");
         const filename = `${companyName.replace(/[^a-z0-9]+/gi, "-")}-decarbonisation-illustration.pdf`;
@@ -39,6 +51,7 @@ export function CtaPanel({ companyName }: { companyName: string }) {
       } catch {
         setPdfError("Could not generate the PDF in this browser — try again, or use your browser's print-to-PDF instead.");
       } finally {
+        onAfterPdf?.();
         setGeneratingPdf(false);
       }
     } else {

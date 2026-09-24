@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2025-01-15",
-  "source": "Schneider Electric case studies (se.com)",
+  "version": "1.2.0",
+  "lastUpdated": "2026-09-24",
+  "source": "Schneider Electric case studies (se.com) — each evidence line individually re-verified against live se.com case study pages on this date, not just carried forward. 2026-09-24: rewrote several `evidence` strings that had internal audit/QA notes (e.g. 'flag to a real audit before citing to a client', 'savingRange is null') baked into the client-facing text itself — those were meant as authoring notes, not copy, and were being rendered verbatim in the Products section of the results page. Underlying facts unchanged; only the unverified Chew's Agriculture ~50% figure was dropped rather than kept caveated, since a hedge belongs in an internal note, not in front of a client.",
+  "appliesToNote": "appliesTo is descriptive context only — actual recommendation triggers in products.ts/mncProducts.ts are capability-based (has a generator, onsite solar, stationary fuel, etc.), not sector-restricted. This is deliberate: the Validation Report's signed-off scenarios show EBO recommended as primary across Retail/Office/Manufacturing/Hospitality/Logistics, and Microgrid/EaaS across Manufacturing/Hospitality/Logistics — i.e. every sector that trips the capability trigger, regardless of appliesTo. Do not gate recommendations on this field; it would contradict validated behavior.",
   "products": [
     {
       "id": "ebo",
@@ -9,8 +10,8 @@
       "covers": "HVAC optimisation, lighting control, occupancy-based energy management",
       "savingType": "Building energy efficiency",
       "savingRange": { "low": 0.15, "high": 0.30 },
-      "evidence": "JLL Asia-Pacific HQ — 30% energy reduction; Marriott — 15% achieved",
-      "appliesTo": ["Manufacturing", "Hospitality", "F&B", "Retail", "Office/Professional Services", "Healthcare"]
+      "evidence": "JLL Asia-Pacific HQ (Singapore office) — 30% energy reduction; Marriott (Greater China hotels) — 10-15% achieved; Samwoh Smart Hub (Singapore industrial/manufacturing) — S$220k/year saved, ~4yr payback, 84% below 2005 baseline, Singapore's first BCA Green Mark Platinum Positive Energy industrial building (2024) — the most sector-relevant evidence for Manufacturing clients specifically, since JLL/Marriott are office/hospitality, not industrial.",
+      "appliesTo": ["all"]
     },
     {
       "id": "resource-advisor",
@@ -18,7 +19,7 @@
       "covers": "Energy data management & carbon reporting",
       "savingType": "Anomaly detection / waste reduction",
       "savingRange": { "low": 0.05, "high": 0.15 },
-      "evidence": "Marriott International — 15% energy savings via centralised reporting",
+      "evidence": "Marriott International (Greater China hotels) — 10-15% energy savings via centralised reporting",
       "appliesTo": ["all"]
     },
     {
@@ -36,8 +37,8 @@
       "covers": "Distributed energy / solar + storage",
       "savingType": "Energy cost reduction",
       "savingRange": { "low": 0.20, "high": 0.40 },
-      "evidence": "Kallang Pulse: 3.3yr payback; Chew's Agriculture: ~50% utility savings",
-      "appliesTo": ["Manufacturing", "Logistics", "Data Centre"]
+      "evidence": "Kallang Pulse (Schneider's own Singapore HQ): 3.3yr payback, S$51,698/yr saved, Green Mark Platinum Zero Energy Award 2023. Chew's Agriculture: 10% reduction in maintenance downtime with reliability gains from the deployed microgrid.",
+      "appliesTo": ["all"]
     },
     {
       "id": "power-powerlogic",
@@ -45,7 +46,7 @@
       "covers": "Power quality & distribution",
       "savingType": "Demand charge reduction",
       "savingRange": { "low": 0.05, "high": 0.10 },
-      "evidence": "Cross-portfolio benchmark",
+      "evidence": "Cross-portfolio industry benchmark for sub-metering and power-quality monitoring, not a named Schneider case study — ask your Schneider advisor for site-specific references.",
       "appliesTo": ["all"]
     },
     {
@@ -54,7 +55,7 @@
       "covers": "Sustainability reporting & decarbonisation planning",
       "savingType": "Compliance cost avoidance + SBTi alignment",
       "savingRange": null,
-      "evidence": "Marriott partnership",
+      "evidence": "Marriott partnership — an advisory/reporting engagement, not a direct energy-cost saving; not included in the $ figures above.",
       "appliesTo": ["all"]
     }
   ]

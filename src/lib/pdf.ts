@@ -14,6 +14,7 @@ export async function downloadElementAsPdf(elementId: string, filename: string) 
     scale: 2,
     backgroundColor: "#ffffff",
     useCORS: true,
+    ignoreElements: (el) => el.classList.contains("no-print"),
   });
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });

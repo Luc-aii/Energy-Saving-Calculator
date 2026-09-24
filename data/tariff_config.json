@@ -35,5 +35,13 @@
   ],
   "gstRate": 0.09,
   "updateFrequency": "quarterly",
-  "staleAfterMonths": 4
+  "staleAfterMonths": 4,
+  "greenPremium": {
+    "recOnlySgdPerKwh": 0.0025,
+    "fullGreenPlanLowSgdPerKwh": 0,
+    "fullGreenPlanHighSgdPerKwh": 0.104,
+    "typicalSgdPerKwh": 0.04,
+    "proxy": true,
+    "source": "Singapore Open Electricity Market retailer survey, not a regulator-published rate (retailers set this individually, unlike the regulated tariff above). A REC-only add-on to an existing plan starts from ~0.25 c/kWh. Named 2026 green plans vs. the ~31.91 c/kWh base tariff: Senoko LifeGreen24 (30.09 c/kWh, carbon-neutral via RECs) prices at or below baseline; Keppel ecoGreen24 (38.80 c/kWh) is ~+6.9 c/kWh (~22%); Sembcorp Sunshine Plan (42.31 c/kWh, 100% solar) is ~+10.4 c/kWh (~33%) — consistent with an internal SME stakeholder interview citing a dedicated 100%-offsite renewable contract running '~30% higher' than standard. The 'typical' default sits between a REC add-on and a fully dedicated 100%-renewable plan; override with the client's actual quoted plan rate where known, since the true range is wide. SingSaver 'Open Electricity Market Singapore: Complete 2026 Guide' (singsaver.com.sg); Sunollo Singapore Electricity Price Tracker Q3 2026 (sunollo.com); MissLobang 'Best Electricity Price Plans in Singapore 2026' (misslobang.com)."
+  }
 }

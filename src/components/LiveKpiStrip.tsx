@@ -13,6 +13,16 @@ export function LiveKpiStrip({ companyName, result }: { companyName: string; res
   return (
     <Card>
       <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{companyName || "Your company"} — live estimate</p>
+      {result.criticalWarnings.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900">
+          {result.criticalWarnings.map((w, i) => (
+            <p key={i} className="flex gap-1.5">
+              <span aria-hidden="true">⚠</span>
+              <span>{w}</span>
+            </p>
+          ))}
+        </div>
+      )}
       <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <KpiStat label="Carbon cost / year" value={formatSgd(result.currentAnnualCarbonCostSgd)} />
         <KpiStat

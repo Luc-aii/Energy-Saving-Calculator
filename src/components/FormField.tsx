@@ -1,12 +1,40 @@
-import type { ReactNode } from "react";
+"use client";
 
-export function FieldRow({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+import { useId, isValidElement, cloneElement, type ReactElement, type ReactNode } from "react";
+
+/**
+ * Associates the hint via aria-describedby rather than nesting it inside the
+ * <label> — nesting made the field's accessible name the label text PLUS the
+ * hint paragraph, which is verbose for screen readers and ambiguous for
+ * anything doing label-text lookups (usability finding L1).
+ */
+export function FieldRow({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: ReactNode }) {
+  const inputId = useId();
+  const hintId = useId();
+  const child = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ id?: string; "aria-describedby"?: string; required?: boolean }>, {
+        id: inputId,
+        "aria-describedby": hint ? hintId : undefined,
+        ...(required ? { required: true } : {}),
+      })
+    : children;
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
-      <span className="font-medium text-ink">{label}</span>
-      {children}
-      {hint && <span className="text-xs text-ink-soft">{hint}</span>}
-    </label>
+    <div className="flex flex-col gap-1.5 text-sm">
+      <label htmlFor={inputId} className="font-medium text-ink">
+        {label}
+        {required && (
+          <span className="ml-0.5 text-red-500" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      {child}
+      {hint && (
+        <span id={hintId} className="text-xs text-ink-soft">
+          {hint}
+        </span>
+      )}
+    </div>
   );
 }
 

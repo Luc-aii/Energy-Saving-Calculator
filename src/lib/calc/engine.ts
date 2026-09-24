@@ -8,7 +8,7 @@ import fuelPrices from "@data/fuel_prices.json";
 import type { SmeInputs } from "@/lib/types/inputs";
 import type { CalculationResult, YearRow } from "@/lib/types/results";
 import { carbonTaxRateForYear } from "./carbonTax";
-import { estimateSavingsRate, getCalibrationCurve, checkIntensityAnomaly } from "./benchmark";
+import { estimateSavingsRate, getCalibrationCurve, checkIntensityAnomaly, estimateAnnualKwhFromFloorArea } from "./benchmark";
 import { scoreConfidence } from "./confidence";
 import { buildComplianceFlags, buildSharedComplianceFlags, isCarbonTaxLiable } from "./compliance";
 import { recommendProducts } from "./products";
@@ -16,6 +16,14 @@ import { checkStaleness } from "./staleness";
 import { buildAssumptions, DATA_VERSION } from "./assumptions";
 import { buildKpis } from "./kpi";
 import { buildNarrative } from "./narrative";
+import {
+  getEndUseBreakdown,
+  computeEcmSavingsRate,
+  estimateInvestmentRange,
+  allRemainingEcmIdsForSector,
+  rankRemainingEcms,
+  computeAlreadyImplementedValue,
+} from "./ecm";
 
 const PROJECTION_YEARS = 10;
 const GEF_BASE = emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh;
@@ -37,6 +45,19 @@ function fuelPriceSgdPerUnit(fuelType: "diesel" | "petrol" | "cng" | undefined):
   return fuelPrices.pricesSgdPerUnit.diesel;
 }
 
+/**
+ * A bare `if (x)` truthiness check treats a negative number the same as a
+ * positive one (only 0/undefined are falsy), so a mistyped "-5000" kWh would
+ * silently flow into the maths as -5000. This clamps every raw physical
+ * quantity to >=0 before use (usability finding H2).
+ */
+function nonNeg(v: number | undefined): number {
+  return Math.max(v ?? 0, 0);
+}
+
+/** Implausible even for a large single-site SME — flags the value rather than silently showing a billion-dollar cost with no warning (usability finding H2). */
+const IMPLAUSIBLE_ANNUAL_KWH = 200_000_000;
+
 const HORIZON_UPPER_BOUND_YEARS: Record<SmeInputs["baseline"]["investmentHorizon"], number> = {
   "<2": 2,
   "2-5": 5,
@@ -46,65 +67,115 @@ const HORIZON_UPPER_BOUND_YEARS: Record<SmeInputs["baseline"]["investmentHorizon
 
 export function calculateSme(inputs: SmeInputs): CalculationResult {
   const warnings: string[] = [];
+  const criticalWarnings: string[] = [];
   const currentYear = new Date().getFullYear();
-  const tariff = inputs.sensitivity.tariffOverrideSgdPerKwh ?? DEFAULT_TARIFF;
+  const tariff = inputs.energy.tariffOverrideSgdPerKwh ?? DEFAULT_TARIFF;
+  const gef = inputs.energy.gridEmissionFactorOverrideKgPerKwh ?? GEF_BASE;
+  if (inputs.energy.gridEmissionFactorOverrideKgPerKwh !== undefined) {
+    warnings.push("A custom grid emission factor is in use instead of the EMA Singapore reference figure — confirm this is the correct factor for your electricity source.");
+  }
 
   // ---- Scope 2: electricity ----
   let annualElectricityKwh = 0;
-  const readings = inputs.energy.electricityMonthlyReadings?.filter((v) => Number.isFinite(v));
+  const readings = inputs.energy.electricityMonthlyReadings?.filter((v) => Number.isFinite(v) && v > 0);
   if (readings && readings.length > 0) {
     const avgMonthly = readings.reduce((a, b) => a + b, 0) / readings.length;
     annualElectricityKwh = avgMonthly * 12;
-  } else if (inputs.energy.monthlyElectricityKwh) {
-    annualElectricityKwh = inputs.energy.monthlyElectricityKwh * 12;
-  } else if (inputs.energy.monthlyElectricitySpendSgd) {
-    annualElectricityKwh = (inputs.energy.monthlyElectricitySpendSgd / tariff) * 12;
+  } else if (nonNeg(inputs.energy.monthlyElectricityKwh) > 0) {
+    annualElectricityKwh = nonNeg(inputs.energy.monthlyElectricityKwh) * 12;
+  } else if (nonNeg(inputs.energy.monthlyElectricitySpendSgd) > 0) {
+    annualElectricityKwh = (nonNeg(inputs.energy.monthlyElectricitySpendSgd) / tariff) * 12;
     warnings.push("Electricity consumption was back-calculated from your S$ spend using the reference tariff — this is an estimate.");
+  } else {
+    const floorAreaEstimate = estimateAnnualKwhFromFloorArea(inputs.universal.sector, inputs.energy.subProfile, nonNeg(inputs.universal.floorAreaM2));
+    if (floorAreaEstimate !== null) {
+      annualElectricityKwh = floorAreaEstimate;
+      warnings.push(
+        `No kWh or spend was entered, so electricity consumption was estimated from your floor area (${nonNeg(inputs.universal.floorAreaM2).toLocaleString("en-SG")} m²) × the ${inputs.universal.sector} sector-average energy intensity — this is a rough GFA-based estimate; enter your actual kWh or spend in Scope 2 for an accurate illustration.`
+      );
+    }
   }
-  const annualSolarKwh = inputs.energy.hasSolar ? (inputs.energy.solarMonthlyGenerationKwh ?? 0) * 12 : 0;
+  if (annualElectricityKwh <= 0) {
+    criticalWarnings.push(
+      "No electricity usage has been entered yet — every figure below only reflects the EEG grant and any fuel/refrigerant data you've added, not real energy savings. Enter your monthly kWh (or spend, or 12 months of readings) in Scope 2 for an accurate illustration."
+    );
+  } else if (annualElectricityKwh > IMPLAUSIBLE_ANNUAL_KWH) {
+    criticalWarnings.push(
+      `Your electricity usage (${Math.round(annualElectricityKwh).toLocaleString("en-SG")} kWh/year) is far beyond what a typical facility uses — please double-check the units and figure entered in Scope 2.`
+    );
+  }
+  const annualSolarKwh = inputs.energy.hasSolar ? nonNeg(inputs.energy.solarMonthlyGenerationKwh) * 12 : 0;
+  if (inputs.energy.hasSolar && annualSolarKwh === 0) {
+    warnings.push("Onsite solar is set to \"Yes\" but no generation figure was entered — 0 kWh of solar credit was applied.");
+  }
   const netAnnualElectricityKwh = Math.max(annualElectricityKwh - annualSolarKwh, 0);
-  const scope2TCo2e = (netAnnualElectricityKwh * GEF_BASE) / 1000;
+
+  // ---- Clean vs. dirty energy price/emissions split (market-based accounting) ----
+  const renewablePct = Math.min(Math.max(inputs.energy.renewableCoveragePct ?? 0, 0), 100) / 100;
+  if (inputs.energy.renewableCoveragePct !== undefined && (inputs.energy.renewableCoveragePct < 0 || inputs.energy.renewableCoveragePct > 100)) {
+    warnings.push("Renewable coverage % was outside 0-100 — clamped to a valid range for this calculation.");
+  }
+  const greenPremium = inputs.energy.greenTariffPremiumOverrideSgdPerKwh ?? tariffConfig.greenPremium.typicalSgdPerKwh;
+  const dirtyKwh = netAnnualElectricityKwh * (1 - renewablePct);
+  const cleanKwh = netAnnualElectricityKwh * renewablePct;
+  const dirtyPaymentSgd = dirtyKwh * tariff;
+  const cleanPaymentSgd = cleanKwh * (tariff + greenPremium);
+  const greenPremiumPaidSgd = cleanKwh * greenPremium;
+  if (cleanKwh > 0) {
+    warnings.push(`Renewable coverage assumes RECs, a PPA, or a green tariff plan backs that ${(renewablePct * 100).toFixed(0)}% share (market-based accounting) — a ${greenPremium.toFixed(4)} S$/kWh premium is applied on that share; the underlying physical grid mix is unchanged. See "Illustration basis" for the source.`);
+  }
+  const scope2LocationBasedTCo2e = (netAnnualElectricityKwh * gef) / 1000;
+  const scope2TCo2e = (dirtyKwh * gef) / 1000; // market-based — zeroes the REC/PPA/green-tariff-covered share
 
   // ---- Scope 1: natural gas ----
-  const annualGasGJ = (inputs.energy.monthlyNaturalGasGJ ?? 0) * 12;
+  const annualGasGJ = nonNeg(inputs.energy.monthlyNaturalGasGJ) * 12;
   const gasScope1TCo2e = (annualGasGJ * emissionFactors.naturalGas.kgCo2ePerGJ) / 1000;
   if (annualGasGJ > 0) {
-    warnings.push("Natural gas emission factor is an unconfirmed placeholder (IPCC default) pending team sign-off — see data/emission_factors.json.");
+    warnings.push("Natural gas emission factor is a DEFRA (UK) stand-in — no Singapore-specific SEFR value has been published for natural gas combustion; combustion chemistry doesn't vary materially by country, so this is a reasonable proxy, not an unsourced placeholder — see data/emission_factors.json.");
   }
 
-  // ---- Scope 1: fleet + generator fuel ----
-  let fuelScope1TCo2e = 0;
+  // ---- Scope 1: fleet + generator fuel (tracked separately for the per-source breakdown, M6) ----
+  let fleetFuelScope1TCo2e = 0;
   if (inputs.fuelFleet.hasVehicles) {
     let annualLitres = 0;
-    if (inputs.fuelFleet.monthlyFuelLitres) {
-      annualLitres = inputs.fuelFleet.monthlyFuelLitres * 12;
-    } else if (inputs.fuelFleet.monthlyFuelSpendSgd) {
-      annualLitres = (inputs.fuelFleet.monthlyFuelSpendSgd / fuelPriceSgdPerUnit(inputs.fuelFleet.fuelType)) * 12;
+    if (nonNeg(inputs.fuelFleet.monthlyFuelLitres) > 0) {
+      annualLitres = nonNeg(inputs.fuelFleet.monthlyFuelLitres) * 12;
+    } else if (nonNeg(inputs.fuelFleet.monthlyFuelSpendSgd) > 0) {
+      annualLitres = (nonNeg(inputs.fuelFleet.monthlyFuelSpendSgd) / fuelPriceSgdPerUnit(inputs.fuelFleet.fuelType)) * 12;
       warnings.push("Fleet fuel volume was back-calculated from your S$ spend using an indicative pump price — see data/fuel_prices.json.");
+    } else {
+      warnings.push("Company vehicles is set to \"Yes\" but no fuel litres or spend was entered — 0 fleet fuel emissions were counted.");
     }
-    fuelScope1TCo2e += (annualLitres * fuelFactorKgPerLitre(inputs.fuelFleet.fuelType)) / 1000;
+    fleetFuelScope1TCo2e = (annualLitres * fuelFactorKgPerLitre(inputs.fuelFleet.fuelType)) / 1000;
   }
+  let generatorFuelScope1TCo2e = 0;
   if (inputs.fuelFleet.hasGenerator) {
     let annualLitres = 0;
-    if (inputs.fuelFleet.generatorMonthlyFuelLitres) {
-      annualLitres = inputs.fuelFleet.generatorMonthlyFuelLitres * 12;
-    } else if (inputs.fuelFleet.generatorHoursPerMonth && inputs.fuelFleet.generatorTankSizeLitres) {
-      const litresPerHour = inputs.fuelFleet.generatorTankSizeLitres / GENERATOR_TANK_HOURS_ASSUMPTION;
-      annualLitres = inputs.fuelFleet.generatorHoursPerMonth * litresPerHour * 12;
+    if (nonNeg(inputs.fuelFleet.generatorMonthlyFuelLitres) > 0) {
+      annualLitres = nonNeg(inputs.fuelFleet.generatorMonthlyFuelLitres) * 12;
+    } else if (nonNeg(inputs.fuelFleet.generatorHoursPerMonth) > 0 && nonNeg(inputs.fuelFleet.generatorTankSizeLitres) > 0) {
+      const litresPerHour = nonNeg(inputs.fuelFleet.generatorTankSizeLitres) / GENERATOR_TANK_HOURS_ASSUMPTION;
+      annualLitres = nonNeg(inputs.fuelFleet.generatorHoursPerMonth) * litresPerHour * 12;
       warnings.push("Generator fuel use was estimated from runtime x tank size using a rule-of-thumb consumption rate — not a sourced figure.");
+    } else {
+      warnings.push("Diesel backup generator is set to \"Yes\" but no litres, or runtime + tank size, was entered — 0 generator emissions were counted.");
     }
-    fuelScope1TCo2e += (annualLitres * emissionFactors.fuels.dieselKgCo2ePerLitre) / 1000;
+    generatorFuelScope1TCo2e = (annualLitres * emissionFactors.fuels.dieselKgCo2ePerLitre) / 1000;
   }
+  const fuelScope1TCo2e = fleetFuelScope1TCo2e + generatorFuelScope1TCo2e;
 
   // ---- Scope 1: refrigerants (fugitive) ----
   let refrigerantScope1TCo2e = 0;
   if (inputs.refrigerants.hasRefrigerants) {
     if (inputs.refrigerants.refrigerantType && inputs.refrigerants.refrigerantType !== "Unknown") {
       const gwp = refrigerantGwp.gases[inputs.refrigerants.refrigerantType as keyof typeof refrigerantGwp.gases];
-      const kg = inputs.refrigerants.refrigerantAnnualTopUpKg ?? 0;
+      const kg = nonNeg(inputs.refrigerants.refrigerantAnnualTopUpKg);
       refrigerantScope1TCo2e = (kg * gwp) / 1000;
       if (inputs.refrigerants.refrigerantType === "R-22") {
         warnings.push(refrigerantGwp.phaseOutNotice["R-22"]);
+      }
+      if (kg === 0) {
+        warnings.push("Refrigeration equipment is in use but the annual top-up quantity was left blank — 0 kg assumed, so no fugitive emissions were counted. Check your ACMV service records for the actual figure.");
       }
     } else {
       warnings.push("Refrigerant type is unknown — fugitive emissions were not included. Check your ACMV service records to add this.");
@@ -137,16 +208,16 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     (scope3Factors.spendBased.purchasedGoodsKgCo2ePerUsd.low + scope3Factors.spendBased.purchasedGoodsKgCo2ePerUsd.high) / 2;
 
   let logisticsTCo2e = 0;
-  if (inputs.scope3.annualLogisticsSpendSgd) {
-    const usd = inputs.scope3.annualLogisticsSpendSgd * fx;
+  if (nonNeg(inputs.scope3.annualLogisticsSpendSgd) > 0) {
+    const usd = nonNeg(inputs.scope3.annualLogisticsSpendSgd) * fx;
     const modeMultiplier =
       inputs.scope3.freightMode === "Air" ? 2.5 : inputs.scope3.freightMode === "Sea" ? 0.5 : 1;
     logisticsTCo2e = (usd * purchasedGoodsMidFactor * modeMultiplier) / 1000;
   }
 
   let flightsTCo2e = 0;
-  if (inputs.scope3.flightsPerYear) {
-    const passengerKm = inputs.scope3.flightsPerYear * scope3Factors.assumptions.defaultBusinessFlightRoundTripKm;
+  if (nonNeg(inputs.scope3.flightsPerYear) > 0) {
+    const passengerKm = nonNeg(inputs.scope3.flightsPerYear) * scope3Factors.assumptions.defaultBusinessFlightRoundTripKm;
     // The default 4,000km round-trip is documented as a "regional hub" assumption (e.g. Singapore-Hong Kong),
     // which is short/medium-haul, not long-haul — DEFRA's short-haul factor is actually higher per km than
     // long-haul (take-off/landing overhead is a bigger share of a shorter flight), so using long-haul here
@@ -155,14 +226,14 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   }
 
   let purchasedGoodsTCo2e = 0;
-  if (inputs.scope3.annualPurchasedGoodsSpendSgd) {
-    const usd = inputs.scope3.annualPurchasedGoodsSpendSgd * fx;
+  if (nonNeg(inputs.scope3.annualPurchasedGoodsSpendSgd) > 0) {
+    const usd = nonNeg(inputs.scope3.annualPurchasedGoodsSpendSgd) * fx;
     purchasedGoodsTCo2e = (usd * purchasedGoodsMidFactor) / 1000;
   }
 
   let commutingTCo2e = 0;
-  const commutingEmployees = inputs.scope3.employeesCommuting ?? inputs.universal.employeeCount;
-  if (commutingEmployees) {
+  const commutingEmployees = nonNeg(inputs.scope3.employeesCommuting ?? inputs.universal.employeeCount);
+  if (commutingEmployees > 0) {
     const roundTripKm = scope3Factors.commuting.singaporeAverageOneWayKm * 2;
     const annualPassengerKm = commutingEmployees * roundTripKm * scope3Factors.commuting.workingDaysPerYear;
     const mode = inputs.scope3.commuteMode ?? "both";
@@ -182,24 +253,51 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   const energyIntensity = inputs.universal.floorAreaM2
     ? annualElectricityKwh / inputs.universal.floorAreaM2
     : null;
-  const { savingRatePct: computedRate, positionLabel } = estimateSavingsRate(inputs.universal.sector, energyIntensity);
-  const calibration = getCalibrationCurve(inputs.universal.sector, energyIntensity);
+  // Data Centre only, and only when the user has supplied an IT-load figure — lets that sector compare
+  // on a true PUE basis instead of always falling back to "sector average assumed" (usability finding M5).
+  const computedPue =
+    inputs.universal.sector === "Data Centre" && nonNeg(inputs.energy.itLoadKwh) > 0 && annualElectricityKwh > 0
+      ? annualElectricityKwh / nonNeg(inputs.energy.itLoadKwh)
+      : null;
+  const { savingRatePct: computedRate, positionLabel } = estimateSavingsRate(
+    inputs.universal.sector,
+    energyIntensity,
+    inputs.energy.subProfile,
+    computedPue
+  );
+  const calibration = getCalibrationCurve(inputs.universal.sector, energyIntensity, inputs.energy.subProfile, computedPue);
 
-  const intensityAnomaly = checkIntensityAnomaly(inputs.universal.sector, energyIntensity);
+  const intensityAnomaly = checkIntensityAnomaly(inputs.universal.sector, energyIntensity, inputs.energy.subProfile, computedPue);
   if (intensityAnomaly) warnings.push(intensityAnomaly);
 
-  let savingRatePct = inputs.sensitivity.savingsRateOverridePct ?? computedRate;
-  if (!inputs.sensitivity.savingsRateOverridePct) {
-    // Block E double-counting adjustment: discount for capability already deployed/underway (any vendor).
-    if (inputs.baseline.existingSolutionIds.includes("bms")) {
-      savingRatePct *= 0.5;
-      warnings.push("Savings rate halved — you already have a building management system in place, so much of this efficiency opportunity is likely already captured.");
-    }
-    if (inputs.baseline.currentEfficiencyInitiatives.length > 0) {
-      const discount = Math.min(inputs.baseline.currentEfficiencyInitiatives.length * 0.03, 0.1);
-      savingRatePct = Math.max(savingRatePct - discount, 0.02);
-      warnings.push(`Savings rate reduced by ${(discount * 100).toFixed(0)} points to avoid double-counting your existing efficiency initiatives.`);
-    }
+  // ---- Energy end-use breakdown & ECM-driven bottom-up savings rate ----
+  // Savings are now always ECM-driven once a sector has catalog coverage (all 8 named sectors do):
+  // the "further opportunity" set is every relevant catalog measure the company hasn't already told
+  // us it has. The calibration-curve rate is kept only as positioning context (finalPositionLabel)
+  // and as the last-resort fallback for a sector with zero catalog coverage.
+  const energyEndUseBreakdown = getEndUseBreakdown(inputs.universal.sector, inputs.energy.subProfile, inputs.energy.customEndUsePct);
+  const implementedIds = inputs.baseline.implementedOrInProgressEcmIds;
+  const remainingEcmIds = allRemainingEcmIdsForSector(inputs.universal.sector, implementedIds);
+  const ecmResult = computeEcmSavingsRate({
+    endUseBreakdown: energyEndUseBreakdown,
+    selectedEcmIds: remainingEcmIds,
+    totalElectricityKwh: netAnnualElectricityKwh,
+  });
+  const alreadyImplementedEcm = computeAlreadyImplementedValue(energyEndUseBreakdown, implementedIds, netAnnualElectricityKwh, tariff);
+  const topEcmRecommendations = rankRemainingEcms(inputs.universal.sector, energyEndUseBreakdown, implementedIds, netAnnualElectricityKwh, tariff);
+
+  const savingRatePct = inputs.sensitivity.savingsRateOverridePct ?? ecmResult?.ratePctMid ?? computedRate;
+
+  // The sector-position label (e.g. "worst quartile") describes where the calibration curve places this
+  // business — but when an ECM-derived or manual rate is actually used, showing that label next to a
+  // different % read as contradictory (usability finding M1). Make the relationship explicit instead.
+  let finalPositionLabel = positionLabel;
+  if (ecmResult) {
+    finalPositionLabel = inputs.sensitivity.savingsRateOverridePct
+      ? `${positionLabel} — sector curve suggests ${(computedRate * 100).toFixed(0)}%; your manual override sets ${(inputs.sensitivity.savingsRateOverridePct * 100).toFixed(0)}%`
+      : `${positionLabel} — sector curve suggests ${(computedRate * 100).toFixed(0)}%; your ${ecmResult.breakdown.length} remaining Energy Conservation Measure(s) give ${(ecmResult.ratePctMid * 100).toFixed(0)}%`;
+  } else if (inputs.sensitivity.savingsRateOverridePct) {
+    finalPositionLabel = `${positionLabel} — sector curve suggests ${(computedRate * 100).toFixed(0)}%; your manual override sets ${(inputs.sensitivity.savingsRateOverridePct * 100).toFixed(0)}%`;
   }
 
   if (savingRatePct > 0.4) warnings.push("Estimated savings exceed 40% — unusually high, please verify inputs.");
@@ -208,29 +306,52 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   const kwhSaved = netAnnualElectricityKwh * savingRatePct;
 
   // ---- Grant ----
-  const grantValue = Math.min(inputs.estimatedInvestmentSgd * (EEG.coFundRate ?? 0.7), EEG.maxAmountSgd ?? Infinity);
-  const netInvestmentSgd = Math.max(inputs.estimatedInvestmentSgd - grantValue, 0);
+  // Deliberately NOT applied to the savings/payback math: grant eligibility and the actual awarded
+  // amount are assessed case-by-case by EnterpriseSG, not a constant every applicant receives — folding
+  // it into the headline figures would overstate the confidence of a number that isn't guaranteed.
+  // Surfaced only as an informational note (below) and in "Illustration basis & assumptions".
+  const netInvestmentSgd = inputs.estimatedInvestmentSgd;
+  warnings.push(
+    `An EEG grant (EnterpriseSG, up to S$${(EEG.maxAmountSgd ?? 0).toLocaleString("en-SG")}, ${((EEG.coFundRate ?? 0.7) * 100).toFixed(0)}% co-fund) may be available depending on eligibility — not included in the savings or payback figures above, since the award amount and eligibility are assessed case-by-case, not a constant every applicant receives. Confirm eligibility with a Schneider advisor.`
+  );
+
+  // ---- Suggested investment range from the further-opportunity ECMs' cost tiers (usability finding M3) ----
+  const suggestedInvestment = estimateInvestmentRange(remainingEcmIds);
+  if (suggestedInvestment) {
+    if (inputs.estimatedInvestmentSgd > suggestedInvestment.highSgd * 3) {
+      warnings.push(
+        `Your estimated investment (S$${inputs.estimatedInvestmentSgd.toLocaleString("en-SG")}) is well above the rough range implied by your selected measures (S$${suggestedInvestment.lowSgd.toLocaleString("en-SG")}–S$${suggestedInvestment.highSgd.toLocaleString("en-SG")}) — consider whether the scope matches, or add more measures.`
+      );
+    } else if (inputs.estimatedInvestmentSgd < suggestedInvestment.lowSgd / 3) {
+      warnings.push(
+        `Your estimated investment (S$${inputs.estimatedInvestmentSgd.toLocaleString("en-SG")}) is well below the rough range implied by your selected measures (S$${suggestedInvestment.lowSgd.toLocaleString("en-SG")}–S$${suggestedInvestment.highSgd.toLocaleString("en-SG")}) — the payback below may be unrealistically fast.`
+      );
+    }
+  }
 
   // ---- Current annual carbon cost (cover summary) ----
+  const totalElectricityCostSgd = dirtyPaymentSgd + cleanPaymentSgd;
   const currentYearRate = carbonTaxRateForYear(currentYear, inputs.carbonPriceScenario);
   const currentAnnualCarbonCostSgd = isLiable
-    ? netAnnualElectricityKwh * tariff + baselineScope1TCo2e * currentYearRate
-    : netAnnualElectricityKwh * tariff;
+    ? totalElectricityCostSgd + baselineScope1TCo2e * currentYearRate
+    : totalElectricityCostSgd;
 
   // ---- Year-by-year projection ----
   const yearRows: YearRow[] = [];
   let cumulativeSavingSgd = 0;
-  const escalation = inputs.sensitivity.tariffEscalationPctPerYear;
+  const escalation = inputs.energy.tariffEscalationPctPerYear;
   for (let year = 1; year <= PROJECTION_YEARS; year++) {
     const calendarYear = currentYear + year - 1;
     const rate = carbonTaxRateForYear(calendarYear, inputs.carbonPriceScenario);
-    const gefThisYear = Math.max(GEF_BASE - GEF_ANNUAL_DECLINE * (year - 1), 0.1);
-    const carbonAvoidedTCo2e = (kwhSaved * gefThisYear) / 1000;
+    const gefThisYear = Math.max(gef - GEF_ANNUAL_DECLINE * (year - 1), 0.1);
+    const carbonAvoidedTCo2e = (kwhSaved * (1 - renewablePct) * gefThisYear) / 1000;
     const escalatedTariff = tariff * Math.pow(1 + escalation, year - 1);
-    const energySavingSgd = kwhSaved * escalatedTariff;
+    const blendedEffectiveRate = (1 - renewablePct) * escalatedTariff + renewablePct * (escalatedTariff + greenPremium);
+    const energySavingSgd = kwhSaved * blendedEffectiveRate;
     // Only a genuine direct taxpayer avoids a real NEA/IRAS bill by cutting emissions — see isLiable note above.
     const carbonTaxSavingSgd = isLiable ? carbonAvoidedTCo2e * rate : 0;
-    const grantSgd = year === 1 ? grantValue : 0;
+    // Grant is intentionally excluded from totals — see the note above.
+    const grantSgd = 0;
     const totalSavingSgd = energySavingSgd + carbonTaxSavingSgd + grantSgd;
     cumulativeSavingSgd += totalSavingSgd;
     const doNothingCarbonTaxSgd = isLiable ? carbonAvoidedTCo2e * rate : 0;
@@ -278,7 +399,12 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   const confidenceScore = scoreConfidence(inputs);
   const year1Total = yearRows[0].totalSavingSgd;
   const tenYearTotal = yearRows[yearRows.length - 1].cumulativeSavingSgd;
-  const w = confidenceScore.rangeWidthPct;
+  let w = confidenceScore.rangeWidthPct;
+  if (ecmResult && ecmResult.ratePctMid > 0) {
+    // Naming specific sourced measures narrows the range if it's tighter than the generic data-quality-based one.
+    const ecmWidthPct = (ecmResult.ratePctHigh - ecmResult.ratePctLow) / (2 * ecmResult.ratePctMid);
+    if (ecmWidthPct < w) w = ecmWidthPct;
+  }
 
   // ---- Target comparison ----
   let targetComparison: CalculationResult["targetComparison"] = null;
@@ -300,17 +426,19 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   }
 
   const staleness = checkStaleness();
-  const assumptions = buildAssumptions(inputs, tariff, savingRatePct, isLiable);
+  const assumptions = buildAssumptions(inputs, tariff, gef, savingRatePct, isLiable);
   const kpis = buildKpis({
     sector: inputs.universal.sector,
+    subProfile: inputs.energy.subProfile,
+    pue: computedPue,
     energyIntensityKwhPerM2: energyIntensity,
     totalScope12TCo2e,
     totalScope3TCo2e: baselineScope3TCo2e,
     employeeCount: inputs.universal.employeeCount,
     annualRevenueSgd: inputs.universal.annualRevenueSgd,
-    annualEnergyCostSgd: netAnnualElectricityKwh * tariff,
+    annualEnergyCostSgd: totalElectricityCostSgd,
     currentAnnualCarbonTaxSgd: isLiable ? baselineScope1TCo2e * currentYearRate : 0,
-    renewableCoveragePct: annualElectricityKwh > 0 ? (annualSolarKwh / annualElectricityKwh) * 100 : 0,
+    renewableCoveragePct: annualElectricityKwh > 0 ? ((annualSolarKwh + cleanKwh) / annualElectricityKwh) * 100 : 0,
   });
 
   const result: CalculationResult = {
@@ -320,7 +448,7 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     totalScope12TCo2e,
     currentAnnualCarbonCostSgd,
     energySavingRatePct: savingRatePct,
-    sectorPositionLabel: positionLabel,
+    sectorPositionLabel: finalPositionLabel,
     calibration,
     yearRows,
     paybackYears,
@@ -345,6 +473,39 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     narrative: "",
     dataVersion: DATA_VERSION,
     warnings,
+    criticalWarnings,
+    energyEndUseBreakdown,
+    energyCostBreakdown: {
+      dirtyKwh,
+      cleanKwh,
+      dirtyPaymentSgd,
+      cleanPaymentSgd,
+      greenPremiumPaidSgd,
+      scope2LocationBasedTCo2e,
+      scope2MarketBasedTCo2e: scope2TCo2e,
+    },
+    ecmResult,
+    emissionsBreakdown: {
+      scope1BySource: [
+        { id: "gas", label: "Natural gas", tCo2e: gasScope1TCo2e },
+        { id: "fleet-fuel", label: "Fleet fuel", tCo2e: fleetFuelScope1TCo2e },
+        { id: "generator", label: "Backup generator", tCo2e: generatorFuelScope1TCo2e },
+        { id: "refrigerants", label: "Refrigerants (fugitive)", tCo2e: refrigerantScope1TCo2e },
+      ].filter((s) => s.tCo2e > 0),
+      scope3ByCategory: [
+        { id: "freight", label: "Logistics / freight", tCo2e: logisticsTCo2e },
+        { id: "flights", label: "Business flights", tCo2e: flightsTCo2e },
+        { id: "purchased-goods", label: "Purchased goods", tCo2e: purchasedGoodsTCo2e },
+        { id: "commuting", label: "Employee commuting", tCo2e: commutingTCo2e },
+      ].filter((s) => s.tCo2e > 0),
+    },
+    suggestedInvestment,
+    computedPue,
+    topEcmRecommendations,
+    alreadyImplementedEcm,
+    monthlySavingSgdRange: { low: year1Total * (1 - w) / 12, high: year1Total * (1 + w) / 12 },
+    monthlyCo2eAvoidedTonnesMid: yearRows[0].carbonAvoidedTCo2e / 12,
+    monthlyCurrentEnergyCostSgd: currentAnnualCarbonCostSgd / 12,
   };
 
   result.narrative = buildNarrative(inputs, result);

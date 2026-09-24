@@ -21,7 +21,16 @@ export function scoreConfidence(inputs: SmeInputs): ConfidenceResult {
   const reasons: string[] = [];
   let level: ConfidenceLevel = "High";
 
-  if (!inputs.energy.monthlyElectricityKwh && inputs.energy.monthlyElectricitySpendSgd) {
+  const hasMeteredReadings = (inputs.energy.electricityMonthlyReadings?.filter((v) => Number.isFinite(v) && v > 0).length ?? 0) > 0;
+  const hasKwh = Boolean(inputs.energy.monthlyElectricityKwh);
+  const hasSpend = Boolean(inputs.energy.monthlyElectricitySpendSgd);
+  if (!hasMeteredReadings && !hasKwh && !hasSpend && inputs.universal.floorAreaM2) {
+    // Weakest electricity data source: a sector-average kWh/m² multiplied by floor area, not
+    // anything the company actually measured or paid — every downstream $ and tonne figure
+    // inherits that uncertainty, so this can't rate higher than Low regardless of other inputs.
+    level = "Low";
+    reasons.push("No kWh or spend was entered — electricity was estimated from floor area × a sector-average energy intensity, the least certain of the three data sources this tool supports");
+  } else if (!hasKwh && hasSpend) {
     level = "Medium";
     reasons.push("Electricity kWh was back-calculated from your S$ spend, not a metered reading");
   }

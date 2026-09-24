@@ -1,17 +1,39 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2025-01-15",
-  "source": "EMA / BCA Green Mark data",
+  "version": "1.1.0",
+  "lastUpdated": "2026-09-22",
+  "source": "EMA / BCA Green Mark data, except Data Centre — see its own 'note' field for sources and revision date",
   "unit": "kWh/m2/year",
   "sectors": {
     "Manufacturing": { "bestInClass": 80, "average": 180, "poor": 320 },
     "Hospitality": { "bestInClass": 200, "average": 350, "poor": 550 },
     "F&B": { "bestInClass": 400, "average": 700, "poor": 1100 },
-    "Retail": { "bestInClass": 250, "average": 400, "poor": 600 },
+    "Retail": {
+      "default": { "bestInClass": 250, "average": 400, "poor": 600 },
+      "supermarket": {
+        "bestInClass": 350,
+        "average": 500,
+        "poor": 750,
+        "note": "Added so a supermarket/grocery client is no longer benchmarked against general-merchandise retail (usability finding M2 — a refrigeration-heavy store always looked 'worst quartile' otherwise). Derived from US EIA CBECS-style supermarket EUI of 40-60 kWh/sq ft/year (~430-645 kWh/m2/year), converted and centred; no Singapore-specific supermarket study was found. Refrigeration is ~50% of a supermarket's load. Source: apollo.eco 'Energy Use Intensity: Top Retail and F&B Benchmarks', LSBU 'Benchmarking of supermarket energy consumption'."
+      }
+    },
     "Office/Professional Services": { "bestInClass": 120, "average": 200, "poor": 350 },
     "Healthcare": { "bestInClass": 300, "average": 500, "poor": 750 },
-    "Logistics": { "bestInClass": 80, "average": 180, "poor": 320 },
-    "Data Centre": { "bestInClass": 1.2, "average": 1.5, "poor": 2.0, "unit": "PUE ratio" },
+    "Logistics": {
+      "default": { "bestInClass": 80, "average": 180, "poor": 320 },
+      "coldStorage": {
+        "bestInClass": 220,
+        "average": 300,
+        "poor": 450,
+        "note": "Added so a cold-chain/reefer warehouse is no longer benchmarked against ambient logistics (usability finding M2). US DOE/industry data shows refrigerated warehouses run roughly 4-9x an ambient warehouse's electricity intensity (median ~25-31 kWh/sq ft/year, ~270-335 kWh/m2/year, refrigeration ~60-70% of load); no Singapore-specific cold-store study was found. Source: Mid-American Energy 'Save energy and money at your refrigerated warehouse'; Cold Chain Innovation Hub research."
+      }
+    },
+    "Data Centre": {
+      "bestInClass": 1.25,
+      "average": 1.3,
+      "poor": 1.7,
+      "unit": "PUE ratio",
+      "note": "Revised from a static 1.2/1.5/2.0 band to track Singapore's regulatory trajectory: PUE <=1.3 was already required for data centre capacity awarded in 2023, and <=1.25 for capacity awarded in Aug 2026, under the Green Data Centre Roadmap (May 2024) and energy-efficiency standard (Jun 2025). The Digital Infrastructure Act, which would make these thresholds legally enforceable across all operators (not just new capacity awards), was in public consultation Jul 2026 and is not yet finalized law as of this data's lastUpdated date — treat 'poor' (1.7, representative of pre-roadmap legacy facilities, which commonly ran 1.7-1.8) as 'not yet compliant with the direction of travel' rather than merely suboptimal. Sources: AKCP 'Singapore's Green Data Centre Roadmap: PUE 1.3 Ahead, and 1.25 for New Capacity' (2026); MDDI/IMDA Digital Infrastructure Bill public consultation, Jul 2026."
+    },
     "Other": { "bestInClass": 150, "average": 300, "poor": 500 }
   }
 }

@@ -2,12 +2,16 @@ import sectorBenchmarks from "@data/sector_benchmarks.json";
 import emissionFactors from "@data/emission_factors.json";
 import type { Sector } from "@/lib/types/inputs";
 import type { KpiItem } from "@/lib/types/results";
+import { resolveBand } from "./benchmark";
 
 const GEF = emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh;
 
 export interface KpiInputs {
   sector: Sector;
+  subProfile?: string;
   energyIntensityKwhPerM2: number | null;
+  /** Data Centre only — total kWh / IT-load kWh, when the user has supplied an IT-load figure. */
+  pue?: number | null;
   totalScope12TCo2e: number;
   totalScope3TCo2e: number;
   employeeCount?: number;
@@ -27,16 +31,20 @@ export interface KpiInputs {
  */
 export function buildKpis(inputs: KpiInputs): KpiItem[] {
   const kpis: KpiItem[] = [];
-  const band = sectorBenchmarks.sectors[inputs.sector as keyof typeof sectorBenchmarks.sectors];
+  const band = resolveBand(inputs.sector, inputs.subProfile);
+  // Data Centre's band is a PUE ratio, not kWh/m² — attaching it as the energy-intensity KPI's benchmark
+  // would silently compare mismatched units (a real kWh/m² value against a 1.2-1.7 PUE band). Only attach
+  // the benchmark when the band is genuinely on the kWh/m² scale.
+  const bandIsKwhM2 = band && (!band.unit || band.unit === sectorBenchmarks.unit);
 
-  if (inputs.energyIntensityKwhPerM2 !== null && band) {
+  if (inputs.energyIntensityKwhPerM2 !== null) {
     kpis.push({
       id: "energy-intensity",
       label: "Energy intensity",
       value: inputs.energyIntensityKwhPerM2,
       unit: "kWh/m²/year",
       tooltip: "Your annual electricity use per square metre. Lower is better — reduce it by improving HVAC/lighting efficiency (EcoStruxure Building Operation).",
-      benchmark: { best: band.bestInClass, average: band.average, poor: band.poor },
+      benchmark: bandIsKwhM2 && band ? { best: band.bestInClass, average: band.average, poor: band.poor } : undefined,
     });
     kpis.push({
       id: "carbon-intensity",
@@ -44,11 +52,21 @@ export function buildKpis(inputs: KpiInputs): KpiItem[] {
       value: (inputs.energyIntensityKwhPerM2 * GEF) / 1000,
       unit: "tCO2e/m²/year",
       tooltip: "Your energy intensity converted to carbon using Singapore's grid emission factor. Tracks energy intensity directly since it's derived from it.",
-      benchmark: {
-        best: (band.bestInClass * GEF) / 1000,
-        average: (band.average * GEF) / 1000,
-        poor: (band.poor * GEF) / 1000,
-      },
+      benchmark:
+        bandIsKwhM2 && band
+          ? { best: (band.bestInClass * GEF) / 1000, average: (band.average * GEF) / 1000, poor: (band.poor * GEF) / 1000 }
+          : undefined,
+    });
+  }
+
+  if (band && !bandIsKwhM2 && inputs.pue !== undefined && inputs.pue !== null) {
+    kpis.push({
+      id: "pue",
+      label: "Power Usage Effectiveness (PUE)",
+      value: inputs.pue,
+      unit: band.unit ?? "PUE ratio",
+      tooltip: "Total facility energy divided by IT-load energy — lower is better. Benchmarked against Singapore's Green Data Centre Roadmap trajectory (see calibration curve for sources).",
+      benchmark: { best: band.bestInClass, average: band.average, poor: band.poor },
     });
   }
 

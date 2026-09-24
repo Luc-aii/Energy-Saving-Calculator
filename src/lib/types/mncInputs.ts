@@ -8,14 +8,23 @@ export type SbtiStatus = "committed" | "in-progress" | "none";
 export interface MncSite {
   id: string;
   name: string;
-  annualElectricityKwh: number;
-  /** Per-site tariff — MNCs are often on contestable rates below the regulated tariff. */
+  /** Primary electricity input — monthly, consistent with monthly-first framing across the tool. Annualized internally (x12). */
+  monthlyElectricityKwh: number;
+  /** Per-site tariff — MNCs are often on contestable rates below the regulated tariff. Falls back to MncInputs.defaultTariffOverrideSgdPerKwh, then the data-file reference tariff. */
   tariffSgdPerKwh?: number;
   /** % of consumption covered by onsite solar / PPA / RECs / green tariff (market-based accounting). */
   renewableCoveragePct: number;
+  /** Per-site grid emission factor override — e.g. a non-Singapore site's actual grid factor. Falls back to MncInputs.defaultGridEmissionFactorOverrideKgPerKwh, then the Singapore EMA reference factor. */
+  gridEmissionFactorOverrideKgPerKwh?: number;
+  /** Overrides the default green-tariff premium (tariff_config.json greenPremium) for this site's renewable-covered share. */
+  greenTariffPremiumOverrideSgdPerKwh?: number;
+  /** Sub-profile id for sectors with a bimodal energy end-use split (e.g. Retail "supermarket", Logistics "coldStorage") — indexes into data/sector_energy_enduse.json. */
+  subProfile?: string;
   annualNaturalGasGJ?: number;
   annualHeatCoolingGJ?: number;
   floorAreaM2?: number;
+  /** Data Centre only — this site's annual IT-load kWh, lets us compute a true PUE (site kWh / IT load) instead of falling back to a generic sector-average assumption. */
+  itLoadKwh?: number;
 }
 
 export interface MncFuelFleet {
@@ -65,9 +74,7 @@ export interface MncBaseline {
   currentCarbonTaxExposureTonnes?: number;
   sbtiStatus: SbtiStatus;
   sbtiTargetYear?: number;
-  /** Vendor-neutral category ids from existingMeasures.ts — never Schneider product ids. */
-  existingSolutionIds: string[];
-  /** Free-text — anything not covered by the checkbox categories. Shown as context only, never parsed. */
+  /** Free-text — anything already in place not covered by the ECM catalog. Shown as context only, never parsed. */
   otherMeasuresText?: string;
   reportingFramework: ReportingFramework;
   budgetRange: BudgetRange;
@@ -76,6 +83,8 @@ export interface MncBaseline {
   isFinancialInstitution: boolean;
   /** Triggers the Scope 3 downstream-pressure compliance flag. */
   isSupplierToSbtiBuyer: boolean;
+  /** Measure ids from data/ecm_catalog.json the company already has in place or is actively rolling out. Excluded from the further-opportunity/Top-3 recommendation set and used to compute the "already saving" credit (see src/lib/calc/ecm.ts). */
+  implementedOrInProgressEcmIds: string[];
 }
 
 export interface MncInputs {
@@ -93,6 +102,12 @@ export interface MncInputs {
   estimatedInvestmentSgd: number;
   carbonPriceScenario: CarbonPriceScenario;
   sensitivity: SensitivitySettings;
+  /** Forward-looking annual tariff escalation applied portfolio-wide, e.g. 0.02 = 2%/year. */
+  tariffEscalationPctPerYear: number;
+  /** Portfolio-wide fallback tariff for sites that don't set their own tariffSgdPerKwh — fills the gap before falling back to the data-file reference tariff. */
+  defaultTariffOverrideSgdPerKwh?: number;
+  /** Portfolio-wide fallback grid emission factor for sites that don't set their own — useful for an MNC with several sites on the same non-Singapore grid. */
+  defaultGridEmissionFactorOverrideKgPerKwh?: number;
 }
 
 export type { CommuteMode };

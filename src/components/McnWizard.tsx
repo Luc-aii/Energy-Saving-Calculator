@@ -7,6 +7,7 @@ import type { CalculationResult, ScenarioSummary } from "@/lib/types/results";
 import type { MncInputs } from "@/lib/types/mncInputs";
 import { MncInputForm, MNC_INPUT_STEPS } from "./MncInputForm";
 import { LiveKpiStrip } from "./LiveKpiStrip";
+import { SampleDataBanner } from "./SampleDataBanner";
 import { HowToUse } from "./HowToUse";
 import { Stepper } from "./ui/Stepper";
 import { PrimaryButton, SecondaryButton } from "./ui/Primitives";
@@ -26,11 +27,15 @@ export function McnWizard({
   setInputs,
   result,
   scenarioComparison,
+  showSampleBanner,
+  onClearSample,
 }: {
   inputs: MncInputs;
   setInputs: Dispatch<SetStateAction<MncInputs>>;
   result: CalculationResult;
   scenarioComparison: ScenarioSummary[];
+  showSampleBanner: boolean;
+  onClearSample: () => void;
 }) {
   const [step, setStep] = useState(0);
   const isResultsStep = step === ALL_STEPS.length - 1;
@@ -42,7 +47,9 @@ export function McnWizard({
         <HowToUse currentStep={step} guides={MNC_STEP_GUIDES} />
       </div>
 
-      <LiveKpiStrip companyName={inputs.companyName} result={result} />
+      {showSampleBanner && !isResultsStep && <SampleDataBanner onClear={onClearSample} />}
+
+      {!isResultsStep && <LiveKpiStrip companyName={inputs.companyName} result={result} />}
 
       {isResultsStep ? (
         <ResultsPanel
