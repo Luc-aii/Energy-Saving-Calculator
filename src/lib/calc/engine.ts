@@ -24,6 +24,7 @@ import {
   rankRemainingEcms,
   computeAlreadyImplementedValue,
 } from "./ecm";
+import { nonNeg, buildFinalPositionLabel, savingsRateSanityWarnings, fastPaybackWarning } from "./sharedEngineHelpers";
 
 const PROJECTION_YEARS = 10;
 const GEF_BASE = emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh;
@@ -43,16 +44,6 @@ function fuelPriceSgdPerUnit(fuelType: "diesel" | "petrol" | "cng" | undefined):
   if (fuelType === "petrol") return fuelPrices.pricesSgdPerUnit.petrol;
   if (fuelType === "cng") return fuelPrices.pricesSgdPerUnit.cng;
   return fuelPrices.pricesSgdPerUnit.diesel;
-}
-
-/**
- * A bare `if (x)` truthiness check treats a negative number the same as a
- * positive one (only 0/undefined are falsy), so a mistyped "-5000" kWh would
- * silently flow into the maths as -5000. This clamps every raw physical
- * quantity to >=0 before use (usability finding H2).
- */
-function nonNeg(v: number | undefined): number {
-  return Math.max(v ?? 0, 0);
 }
 
 /** Implausible even for a large single-site SME — flags the value rather than silently showing a billion-dollar cost with no warning (usability finding H2). */
@@ -244,7 +235,6 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
         ? scope3Factors.commuting.kgCo2ePerPassengerKm.car
         : (scope3Factors.commuting.kgCo2ePerPassengerKm.public + scope3Factors.commuting.kgCo2ePerPassengerKm.car) / 2;
     commutingTCo2e = (annualPassengerKm * factor) / 1000;
-    warnings.push("Employee commuting uses placeholder per-mode emission factors pending DEFRA-sourced sign-off — see data/scope3_factors.json.");
   }
 
   const baselineScope3TCo2e = logisticsTCo2e + flightsTCo2e + purchasedGoodsTCo2e + commutingTCo2e;
@@ -291,18 +281,11 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
 
   // The sector-position label (e.g. "worst quartile") describes where the calibration curve places this
   // business — but when an ECM-derived or manual rate is actually used, showing that label next to a
-  // different % read as contradictory (usability finding M1). Make the relationship explicit instead.
-  let finalPositionLabel = positionLabel;
-  if (ecmResult) {
-    finalPositionLabel = inputs.sensitivity.savingsRateOverridePct
-      ? `${positionLabel} — sector curve suggests ${(computedRate * 100).toFixed(0)}%; your manual override sets ${(inputs.sensitivity.savingsRateOverridePct * 100).toFixed(0)}%`
-      : `${positionLabel} — sector curve suggests ${(computedRate * 100).toFixed(0)}%; your ${ecmResult.breakdown.length} remaining Energy Conservation Measure(s) give ${(ecmResult.ratePctMid * 100).toFixed(0)}%`;
-  } else if (inputs.sensitivity.savingsRateOverridePct) {
-    finalPositionLabel = `${positionLabel} — sector curve suggests ${(computedRate * 100).toFixed(0)}%; your manual override sets ${(inputs.sensitivity.savingsRateOverridePct * 100).toFixed(0)}%`;
-  }
+  // different % read as contradictory (usability finding M1). buildFinalPositionLabel makes the
+  // relationship explicit and always states the assumed rate exactly once (shared with mncEngine.ts).
+  const finalPositionLabel = buildFinalPositionLabel(positionLabel, computedRate, ecmResult, inputs.sensitivity.savingsRateOverridePct);
 
-  if (savingRatePct > 0.4) warnings.push("Estimated savings exceed 40% — unusually high, please verify inputs.");
-  if (savingRatePct < 0.05) warnings.push("Estimated savings are below 5% — below the typical minimum threshold for most Schneider solutions.");
+  warnings.push(...savingsRateSanityWarnings(savingRatePct));
 
   const kwhSaved = netAnnualElectricityKwh * savingRatePct;
 
@@ -386,9 +369,8 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     prevCumulative = row.cumulativeSavingSgd;
   }
 
-  if (paybackYears !== null && paybackYears < 2) {
-    warnings.push("Payback period under 2 years is unusually fast — please double-check your investment cost estimate.");
-  }
+  const fastPaybackMsg = fastPaybackWarning(paybackYears);
+  if (fastPaybackMsg) warnings.push(fastPaybackMsg);
   const horizonBound = HORIZON_UPPER_BOUND_YEARS[inputs.baseline.investmentHorizon];
   if (paybackYears !== null && paybackYears > horizonBound) {
     warnings.push(`Payback period (${paybackYears.toFixed(1)}y) exceeds your stated investment horizon (${inputs.baseline.investmentHorizon} years) — consider a smaller-scope solution or phased rollout.`);

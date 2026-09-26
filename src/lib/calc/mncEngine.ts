@@ -22,6 +22,7 @@ import {
   rankRemainingEcms,
   computeAlreadyImplementedValue,
 } from "./ecm";
+import { nonNeg, buildFinalPositionLabel, savingsRateSanityWarnings, fastPaybackWarning } from "./sharedEngineHelpers";
 
 const PROJECTION_YEARS = 10;
 const GEF_BASE = emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh;
@@ -29,11 +30,6 @@ const GEF_ANNUAL_DECLINE = emissionFactors.electricity.singapore.annualDeclineAs
 const DEFAULT_TARIFF = tariffConfig.currentBaseTariffSgdPerKwh;
 /** SBTi's published minimum linear annual reduction rate for a 1.5C-aligned near-term target. */
 const SBTI_MIN_ANNUAL_REDUCTION_PCT = 4.2;
-
-/** A bare `if (x)` truthiness check treats a negative number as valid (only 0/undefined are falsy) — clamps every raw physical quantity to >=0 before use (usability finding H2). */
-function nonNeg(v: number | undefined): number {
-  return Math.max(v ?? 0, 0);
-}
 
 /** Implausible even for a large multi-site MNC portfolio — flags the value rather than silently showing a nonsensical cost with no warning (usability finding H2). */
 const IMPLAUSIBLE_ANNUAL_KWH = 5_000_000_000;
@@ -218,7 +214,6 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
     const annualCommuteDays = scope3Factors.commuting.workingDaysPerYear * (effectiveDaysPerWeek / 5);
     const roundTripKm = inputs.scope3.averageCommuteKm * 2;
     cat7TCo2e = (totalEmployeesNonNeg * roundTripKm * annualCommuteDays * blendedFactor) / 1000;
-    warnings.push("Employee commuting uses placeholder per-mode emission factors pending DEFRA-sourced sign-off — see data/scope3_factors.json.");
   }
 
   let cat9TCo2e = 0;
@@ -263,19 +258,12 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
 
   // The sector-position label (e.g. "worst quartile") describes where the calibration curve places this
   // portfolio — but when an ECM-derived or manual rate is actually used, showing that label next to a
-  // different % read as contradictory (usability finding M1). Make the relationship explicit instead.
-  let finalPositionLabel = positionLabel;
-  if (ecmResult) {
-    finalPositionLabel = inputs.sensitivity.savingsRateOverridePct
-      ? `${positionLabel} — sector curve suggests ${(savingRatePct * 100).toFixed(0)}%; your manual override sets ${(inputs.sensitivity.savingsRateOverridePct * 100).toFixed(0)}%`
-      : `${positionLabel} — sector curve suggests ${(savingRatePct * 100).toFixed(0)}%; your ${ecmResult.breakdown.length} remaining Energy Conservation Measure(s) give ${(ecmResult.ratePctMid * 100).toFixed(0)}%`;
-  } else if (inputs.sensitivity.savingsRateOverridePct) {
-    finalPositionLabel = `${positionLabel} — sector curve suggests ${(savingRatePct * 100).toFixed(0)}%; your manual override sets ${(inputs.sensitivity.savingsRateOverridePct * 100).toFixed(0)}%`;
-  }
+  // different % read as contradictory (usability finding M1). buildFinalPositionLabel makes the
+  // relationship explicit and always states the assumed rate exactly once (shared with engine.ts).
+  const finalPositionLabel = buildFinalPositionLabel(positionLabel, savingRatePct, ecmResult, inputs.sensitivity.savingsRateOverridePct);
 
   const finalSavingRatePct = inputs.sensitivity.savingsRateOverridePct ?? ecmResult?.ratePctMid ?? savingRatePct;
-  if (finalSavingRatePct > 0.4) warnings.push("Estimated savings exceed 40% — unusually high, please verify inputs.");
-  if (finalSavingRatePct < 0.05) warnings.push("Estimated savings are below 5% — below the typical minimum threshold for most Schneider solutions.");
+  warnings.push(...savingsRateSanityWarnings(finalSavingRatePct));
 
   // ---- Suggested investment range from the further-opportunity ECMs' cost tiers (usability finding M3) ----
   const suggestedInvestment = estimateInvestmentRange(remainingEcmIds);
@@ -344,9 +332,8 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
     }
     prevCumulative = row.cumulativeSavingSgd;
   }
-  if (paybackYears !== null && paybackYears < 2) {
-    warnings.push("Payback period under 2 years is unusually fast — please double-check your investment cost estimate.");
-  }
+  const fastPaybackMsg = fastPaybackWarning(paybackYears);
+  if (fastPaybackMsg) warnings.push(fastPaybackMsg);
 
   // ---- Confidence ----
   const confidenceScore = scoreMncConfidence(inputs);

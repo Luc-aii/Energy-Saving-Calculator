@@ -159,6 +159,9 @@ export function computeEcmSavingsRate({
     for (const m of measures) {
       const mMid = (m.savingRange.low + m.savingRange.high) / 2;
       const kwhSavedMid = totalElectricityKwh * weight * mMid;
+      const dollarSavedPerYearMid = kwhSavedMid * tariffSgdPerKwh;
+      const costTier = COST_TIER_SGD[m.costTier];
+      const costMidSgd = (costTier.low + costTier.high) / 2;
       breakdown.push({
         ecmId: m.id,
         label: m.label,
@@ -168,12 +171,17 @@ export function computeEcmSavingsRate({
         endUseKwh: totalElectricityKwh * weight,
         kwhSavedMid,
         contributionToRatePctMid: weight * mMid,
-        dollarSavedPerYearMid: kwhSavedMid * tariffSgdPerKwh,
+        dollarSavedPerYearMid,
         savingRangeLow: m.savingRange.low,
         savingRangeHigh: m.savingRange.high,
         certainty: (m.certainty ?? "high") as "high" | "variable",
         effortTier: (m.effortTier ?? "medium") as "low" | "medium" | "high",
         evidence: m.evidence,
+        howToImplement: m.howToImplement,
+        costLowSgd: costTier.low,
+        costHighSgd: costTier.high,
+        paybackYearsMid: dollarSavedPerYearMid > 0 ? costMidSgd / dollarSavedPerYearMid : null,
+        costTier: m.costTier as "low" | "medium" | "high",
       });
     }
   }
@@ -268,6 +276,8 @@ export function rankRemainingEcms(
       certainty: (m.certainty ?? "high") as "high" | "variable",
       effortTier: (m.effortTier ?? "medium") as "low" | "medium" | "high",
       evidence: m.evidence,
+      howToImplement: m.howToImplement,
+      costTier: m.costTier as "low" | "medium" | "high",
     };
   });
 

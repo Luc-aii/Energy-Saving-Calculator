@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -20,6 +21,7 @@ import { CalibrationCurveChart } from "./CalibrationCurve";
 import { EnergyEndUseChart } from "./EnergyEndUseChart";
 import { SectorSpotlight } from "./SectorSpotlight";
 import { getTopEndUse } from "@/lib/calc/ecm";
+import { whoImplementsEcm, whenToDoEcm } from "@/lib/ecmGuidance";
 import { KpiDashboard } from "./KpiDashboard";
 import { CtaPanel } from "./CtaPanel";
 import { AiSummaryCard } from "./AiSummaryCard";
@@ -53,11 +55,12 @@ export function ResultsPanel({
   const showGeneral = printMode || activeTab === "general";
   const showIndepth = printMode || activeTab === "indepth";
 
-  // Expand every ECM "how this works" disclosure for the duration of a PDF capture, so the exported
-  // document contains the full mechanism/math, not just whichever rows the viewer happened to expand.
+  // Expand every ECM "how this works" disclosure — including the nested "Show the calculation" toggle
+  // inside each card — for the duration of a PDF capture, so the exported document contains the full
+  // mechanism/math, not just whichever rows the viewer happened to expand.
   useEffect(() => {
     if (!printMode) return;
-    document.querySelectorAll<HTMLDetailsElement>(".ecm-detail").forEach((d) => (d.open = true));
+    document.querySelectorAll<HTMLDetailsElement>(".ecm-detail, .ecm-detail details").forEach((d) => (d.open = true));
   }, [printMode]);
 
   const chartData = result.yearRows.map((r) => ({
@@ -66,12 +69,6 @@ export function ResultsPanel({
     "Do nothing (carbon tax paid)": Math.round(
       result.yearRows.slice(0, r.year).reduce((sum, row) => sum + row.doNothingCarbonTaxSgd, 0)
     ),
-  }));
-
-  const stackedData = result.yearRows.map((r) => ({
-    year: `Y${r.year} (${r.calendarYear})`,
-    "Energy saving": Math.round(r.energySavingSgd),
-    "Carbon tax saving": Math.round(r.carbonTaxSavingSgd),
   }));
 
   const carbonPriceData = result.yearRows
@@ -126,7 +123,22 @@ export function ResultsPanel({
           the ones featured in the hero, rather than making the reader cross-reference the two lists themselves. */}
       {result.ecmResult && (() => {
         const top3Rank = new Map(result.topEcmRecommendations.map((t, i) => [t.ecmId, i + 1]));
-        const sorted = result.ecmResult.breakdown.slice().sort((a, b) => (top3Rank.get(a.ecmId) ?? 99) - (top3Rank.get(b.ecmId) ?? 99));
+        // Badged Top 3 are always pinned first, in their official rankRemainingEcms order — never
+        // re-derived here. The remainder is then ranked by its own payback (cost ÷ $ saved), so "why is
+        // this ranked here" is self-evident from position for everything past #3. Sorting the WHOLE list
+        // by this card's own paybackYearsMid (without pinning) let a near-tied unbadged measure land
+        // ahead of a badged one, since the two paybacks are computed via separate code paths (monthly vs.
+        // annual) whose floating-point ties don't always break the same way — the badge is the single
+        // source of truth for the top 3, not a re-sort that can silently disagree with it.
+        const sorted = result.ecmResult.breakdown.slice().sort((a, b) => {
+          const rankA = top3Rank.get(a.ecmId) ?? Infinity;
+          const rankB = top3Rank.get(b.ecmId) ?? Infinity;
+          if (rankA !== rankB) return rankA - rankB;
+          if (a.paybackYearsMid === null && b.paybackYearsMid === null) return 0;
+          if (a.paybackYearsMid === null) return 1;
+          if (b.paybackYearsMid === null) return -1;
+          return a.paybackYearsMid - b.paybackYearsMid;
+        });
         const implementedCount = result.alreadyImplementedEcm?.ids.length ?? 0;
         return (
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
@@ -134,13 +146,13 @@ export function ResultsPanel({
               How we got to {(result.ecmResult.ratePctMid * 100).toFixed(0)}%
             </h3>
             <p className="mb-1 text-xs text-ink-soft">
-              Bottom-up from your sector&apos;s Energy Conservation Measures — range {(result.ecmResult.ratePctLow * 100).toFixed(0)}–{(result.ecmResult.ratePctHigh * 100).toFixed(0)}%, replacing the sector calibration curve. Click a measure for the mechanism and the exact calculation behind its number.
+              Bottom-up from your sector&apos;s Energy Conservation Measures — range {(result.ecmResult.ratePctLow * 100).toFixed(0)}–{(result.ecmResult.ratePctHigh * 100).toFixed(0)}%, replacing the sector calibration curve. Sorted by payback (cost ÷ $ saved), fastest-returning first — click a measure for the mechanism, cost, and the exact calculation behind its number.
             </p>
             <p className="mb-3 text-xs text-ink-soft">
               {implementedCount > 0
                 ? `Excludes the ${implementedCount} measure(s) you told us you already have or are rolling out — those are credited separately in "You're already saving" above, not counted as further opportunity here.`
                 : "You haven't told us you have any of these measures yet, so every catalog measure for your sector appears below as further opportunity."}
-              {" "}The first {result.topEcmRecommendations.length} are the same Top {result.topEcmRecommendations.length} highlighted above; the rest are the remaining sector-relevant measures.
+              {" "}The Top {result.topEcmRecommendations.length} badged below are the same ones highlighted above — they&apos;re first here too, since this list is sorted by the same payback ranking.
             </p>
             <div className="flex flex-col gap-2">
               {sorted.map((b) => {
@@ -162,25 +174,45 @@ export function ResultsPanel({
                         <span className="rounded-full border border-border bg-white px-2 py-0.5 text-[10px] font-medium">
                           {b.certainty === "variable" ? "varies by site" : "well-documented"}
                         </span>
-                        <span>{(b.contributionToRatePctMid * 100).toFixed(1)} pts of Scope 2 electricity</span>
+                        <span className="rounded-full border border-border bg-white px-2 py-0.5 text-[10px] font-medium">
+                          {b.paybackYearsMid !== null ? `${b.paybackYearsMid.toFixed(1)} yr payback` : "payback n/a"}
+                        </span>
                         <span className="font-semibold text-ink">{formatSgd(b.dollarSavedPerYearMid)}/yr</span>
                         <span className="text-ink-soft transition group-open:rotate-180">▾</span>
                       </span>
                     </summary>
-                    <div className="mt-2 border-t border-border pt-2 text-xs text-ink-soft">
-                      <p className="italic">{b.evidence}</p>
-                      <p className="mt-2 rounded-md bg-brand-50/50 px-2 py-1.5 text-[11px] font-semibold text-ink">
-                        Saves {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%) of your <u>{b.endUseLabel}</u> energy — which is {b.endUseSharePct.toFixed(0)}% of your <u>total Scope 2 electricity</u> — so overall this is {(b.contributionToRatePctMid * 100).toFixed(1)}% of total electricity, every year going forward.
-                      </p>
-                      <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink">
-                        Step 1 — {b.endUseLabel} = {b.endUseSharePct.toFixed(0)}% of your electricity ≈ {Math.round(b.endUseKwh).toLocaleString("en-SG")} kWh/yr
-                        <br />
-                        Step 2 — × this measure&apos;s {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% saving on {b.endUseLabel.toLowerCase()} energy (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%)
-                        <br />
-                        Step 3 — = <strong>{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr saved</strong>, ≈{(b.contributionToRatePctMid * 100).toFixed(1)} points of your overall electricity
-                        <br />
-                        Step 4 — × your tariff = <strong>{formatSgd(b.dollarSavedPerYearMid)}/yr</strong> (≈{formatSgd(b.dollarSavedPerYearMid / 12)}/month)
-                      </p>
+                    {/* Laid out as 5W1H so every measure answers the same fixed set of questions in the
+                        same order, instead of a wall of prose the reader has to parse to find "so what
+                        does this cost and who do I call". Payback and annual return are already glanceable
+                        in the summary row above without opening the card, so they aren't repeated in the
+                        stat row below — only the two figures the summary row doesn't show (cost, kWh/yr)
+                        get their own tile here. */}
+                    <div className="mt-2 flex flex-col gap-2.5 border-t border-border pt-2.5 text-xs text-ink-soft">
+                      <EcmField label="What & why">
+                        Cuts {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%) of your <strong className="text-ink">{b.endUseLabel}</strong> energy — {b.endUseLabel} is {b.endUseSharePct.toFixed(0)}% of your total Scope 2 electricity, so on its own this measure is worth {(b.contributionToRatePctMid * 100).toFixed(1)}% of your total electricity, every year. <span className="italic">{b.evidence}</span>
+                      </EcmField>
+
+                      <div className="grid grid-cols-2 gap-2 rounded-md bg-brand-50/40 p-2">
+                        <Stat label="Estimated cost" value={`${formatSgd(b.costLowSgd)}–${formatSgd(b.costHighSgd)}`} />
+                        <Stat label="Energy saved" value={`${Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr`} />
+                      </div>
+
+                      <EcmField label="How to implement">{b.howToImplement}</EcmField>
+                      <EcmField label="Who's typically involved">{whoImplementsEcm(b.effortTier)}</EcmField>
+                      <EcmField label="When to do it">{whenToDoEcm(b.costTier, b.certainty)}</EcmField>
+
+                      <details className="rounded-md border border-border bg-white p-2">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-wide text-ink-soft">Show the calculation</summary>
+                        <p className="mt-1.5 font-mono text-[11px] leading-relaxed text-ink">
+                          {b.endUseLabel} = {b.endUseSharePct.toFixed(0)}% of your electricity ≈ {Math.round(b.endUseKwh).toLocaleString("en-SG")} kWh/yr
+                          <br />
+                          × this measure&apos;s {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% saving on {b.endUseLabel.toLowerCase()} energy (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%)
+                          <br />
+                          = <strong>{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr saved</strong>, ≈{(b.contributionToRatePctMid * 100).toFixed(1)} points of your overall electricity
+                          <br />
+                          × your tariff = <strong>{formatSgd(b.dollarSavedPerYearMid)}/yr</strong> (≈{formatSgd(b.dollarSavedPerYearMid / 12)}/month)
+                        </p>
+                      </details>
                     </div>
                   </details>
                 );
@@ -344,7 +376,7 @@ export function ResultsPanel({
             <strong>{Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}%</strong> of what you have today.
           </p>
         )}
-        <p className="mt-3 text-xs text-ink-soft">{result.sectorPositionLabel} — assumed energy saving rate {(result.energySavingRatePct * 100).toFixed(0)}%</p>
+        <p className="mt-3 text-xs text-ink-soft">{result.sectorPositionLabel}</p>
         <div className="mt-3">
           <CalibrationCurveChart curve={result.calibration} />
         </div>
@@ -397,12 +429,12 @@ export function ResultsPanel({
           <p className="mb-2 mt-0.5 text-xs text-ink-soft">
             Market-based accounting: your REC/PPA/green-tariff-covered share is priced at a premium and treated as zero-emission; the physical grid mix (location-based) is shown alongside for context.
           </p>
-          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div className="grid grid-cols-3 gap-3 text-sm">
             <MiniStat label="Dirty energy payment" value={formatSgd(result.energyCostBreakdown.dirtyPaymentSgd)} />
             <MiniStat label="Clean energy payment" value={formatSgd(result.energyCostBreakdown.cleanPaymentSgd)} />
             <MiniStat label="Green premium paid" value={formatSgd(result.energyCostBreakdown.greenPremiumPaidSgd)} />
-            <MiniStat label="Renewable share" value={`${((result.energyCostBreakdown.cleanKwh / Math.max(result.energyCostBreakdown.cleanKwh + result.energyCostBreakdown.dirtyKwh, 1)) * 100).toFixed(0)}%`} />
           </div>
+          <p className="mt-1 text-[10px] text-ink-soft">Renewable share is in the KPI dashboard below.</p>
           <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
             <MiniStat label="Scope 2 — market-based (used in $ savings)" value={formatTonnes(result.energyCostBreakdown.scope2MarketBasedTCo2e)} />
             <MiniStat label="Scope 2 — location-based (physical grid mix)" value={formatTonnes(result.energyCostBreakdown.scope2LocationBasedTCo2e)} />
@@ -418,24 +450,6 @@ export function ResultsPanel({
           <KpiDashboard kpis={result.kpis} />
         </div>
       )}
-
-      {/* Chart: what's driving your savings */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="text-sm font-bold text-ink">What&apos;s driving your savings</h3>
-        <div className="mt-2 h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={stackedData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="year" fontSize={11} />
-              <YAxis fontSize={12} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <Tooltip formatter={(v) => formatSgd(Number(v))} />
-              <Legend />
-              <Bar dataKey="Energy saving" stackId="a" fill="#059669" isAnimationActive={false} />
-              <Bar dataKey="Carbon tax saving" stackId="a" fill="#0891b2" isAnimationActive={false} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
 
       {/* Chart: carbon price trajectory */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
@@ -550,6 +564,26 @@ function MiniStat({ label, value }: { label: string; value: string }) {
     <div className="rounded-md bg-brand-50 p-2">
       <p className="text-[10px] uppercase tracking-wide text-ink-soft">{label}</p>
       <p className="text-sm font-bold text-ink">{value}</p>
+    </div>
+  );
+}
+
+/** One labeled 5W1H row inside an ECM card — a fixed, consistent question set (what/why, how much,
+    how, who, when) instead of a free-form paragraph the reader has to parse for the same information. */
+function EcmField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600">{label}</p>
+      <p className="mt-0.5 text-ink">{children}</p>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-ink-soft">{label}</p>
+      <p className="text-xs font-bold text-ink">{value}</p>
     </div>
   );
 }

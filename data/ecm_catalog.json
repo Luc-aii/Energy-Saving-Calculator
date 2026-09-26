@@ -8,315 +8,518 @@
       "id": "led-lighting-retrofit",
       "label": "LED lighting retrofit",
       "endUseId": "lighting",
-      "sectorTags": ["all"],
-      "savingRange": { "low": 0.30, "high": 0.60 },
+      "sectorTags": [
+        "all"
+      ],
+      "savingRange": {
+        "low": 0.3,
+        "high": 0.6
+      },
       "costTier": "low",
       "certainty": "high",
       "effortTier": "low",
-      "evidence": "US DOE — LED retrofits typically cut lighting energy 30-60% vs. fluorescent/incandescent baselines."
+      "evidence": "US DOE — LED retrofits typically cut lighting energy 30-60% vs. fluorescent/incandescent baselines.",
+      "howToImplement": "Replace fluorescent/incandescent fixtures and tubes with LED equivalents during scheduled relamping or a single retrofit pass; most drop-in LED tubes/panels need no rewiring."
     },
     {
       "id": "lighting-occupancy-daylight-controls",
       "label": "Occupancy sensors & daylight harvesting controls",
       "endUseId": "lighting",
-      "sectorTags": ["all"],
-      "savingRange": { "low": 0.10, "high": 0.30 },
+      "sectorTags": [
+        "all"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.3
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
       "evidence": "US DOE — occupancy and daylight-linked lighting controls typically save a further 10-30% of lighting energy on top of the fixtures themselves.",
+      "howToImplement": "Install occupancy/PIR sensors and daylight-linked dimming ballasts on existing (or newly LED) fixtures, zoned by room usage pattern.",
       "schneiderProductId": "ebo"
     },
     {
       "id": "hvac-vsd-fans-pumps",
       "label": "Variable-speed drives on HVAC fans & pumps",
       "endUseId": "hvac",
-      "sectorTags": ["all"],
-      "savingRange": { "low": 0.10, "high": 0.30 },
+      "sectorTags": [
+        "all"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.3
+      },
       "costTier": "medium",
       "certainty": "high",
       "effortTier": "medium",
       "evidence": "ASHRAE / US DOE — VSDs on HVAC fans and pumps typically cut that equipment's energy 20-50%, roughly 10-30% of total HVAC energy.",
+      "howToImplement": "Fit variable-speed drives to existing AHU/FCU fan and pump motors and commission them to modulate with actual load instead of running fixed-speed.",
       "schneiderProductId": "ebo"
     },
     {
       "id": "bms-setpoint-scheduling",
       "label": "BMS-based scheduling & setpoint optimization",
       "endUseId": "hvac",
-      "sectorTags": ["all"],
-      "savingRange": { "low": 0.05, "high": 0.15 },
+      "sectorTags": [
+        "all"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.15
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
       "evidence": "US DOE — BMS-based scheduling and setpoint optimization typically saves 5-15% of HVAC energy with no new capital equipment.",
+      "howToImplement": "Reprogram the existing BMS with occupancy-based schedules and optimized temperature setpoints — controls engineering time, no new hardware.",
       "schneiderProductId": "ebo"
     },
     {
       "id": "high-efficiency-chiller-replacement",
       "label": "High-efficiency chiller plant replacement",
       "endUseId": "hvac",
-      "sectorTags": ["Office/Professional Services", "Retail", "Hospitality", "Healthcare"],
-      "savingRange": { "low": 0.20, "high": 0.30 },
+      "sectorTags": [
+        "Office/Professional Services",
+        "Retail",
+        "Hospitality",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.2,
+        "high": 0.3
+      },
       "costTier": "high",
       "certainty": "high",
       "effortTier": "high",
-      "evidence": "ASHRAE / US DOE — replacing an aging constant-speed chiller plant with high-efficiency (VSD/magnetic-bearing) chillers typically cuts chiller energy 20-30%, the single largest lever in a commercial building's HVAC bill in a cooling-dominant climate like Singapore's."
+      "evidence": "ASHRAE / US DOE — replacing an aging constant-speed chiller plant with high-efficiency (VSD/magnetic-bearing) chillers typically cuts chiller energy 20-30%, the single largest lever in a commercial building's HVAC bill in a cooling-dominant climate like Singapore's.",
+      "howToImplement": "Replace the existing constant-speed chiller(s) with VSD/magnetic-bearing high-efficiency units at end-of-life or as a planned capital project; typically a multi-month procurement and installation."
     },
     {
       "id": "chiller-plant-optimization-controls",
       "label": "Chiller plant optimization (sequencing, condenser water reset)",
       "endUseId": "hvac",
-      "sectorTags": ["Office/Professional Services", "Retail", "Hospitality", "Healthcare"],
-      "savingRange": { "low": 0.08, "high": 0.15 },
+      "sectorTags": [
+        "Office/Professional Services",
+        "Retail",
+        "Hospitality",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.08,
+        "high": 0.15
+      },
       "costTier": "medium",
       "certainty": "variable",
       "effortTier": "medium",
       "evidence": "ASHRAE Guideline 36 / US DOE — optimized chiller sequencing and condenser water reset controls typically save 8-15% of HVAC energy without new chiller hardware; realized saving depends on ongoing commissioning and tuning, same caveat as other controls-only measures.",
+      "howToImplement": "Add or reprogram chiller sequencing and condenser-water-reset controls (e.g. per ASHRAE Guideline 36) on the existing chiller plant — a controls project, not new chiller hardware.",
       "schneiderProductId": "ebo"
     },
     {
       "id": "hvac-ec-fan-motor-retrofit",
       "label": "High-efficiency EC/DC fan motor retrofit (rooftop units & condensers)",
       "endUseId": "hvac",
-      "sectorTags": ["Office/Professional Services", "Retail", "Hospitality", "Healthcare"],
-      "savingRange": { "low": 0.08, "high": 0.15 },
+      "sectorTags": [
+        "Office/Professional Services",
+        "Retail",
+        "Hospitality",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.08,
+        "high": 0.15
+      },
       "costTier": "medium",
       "certainty": "high",
       "effortTier": "medium",
-      "evidence": "US DOE / ENERGY STAR — replacing fixed-speed AC induction motors with electronically-commutated (EC/DC) motors on rooftop-unit and condenser fans typically cuts fan energy 15-30%, roughly 8-15% of total HVAC energy. Often installed as a hardware alternative or complement to a VSD retrofit on the same fans (see `hvac-vsd-fans-pumps`) rather than stacked for the full combined range."
+      "evidence": "US DOE / ENERGY STAR — replacing fixed-speed AC induction motors with electronically-commutated (EC/DC) motors on rooftop-unit and condenser fans typically cuts fan energy 15-30%, roughly 8-15% of total HVAC energy. Often installed as a hardware alternative or complement to a VSD retrofit on the same fans (see `hvac-vsd-fans-pumps`) rather than stacked for the full combined range.",
+      "howToImplement": "Swap fixed-speed AC motors on rooftop-unit and condenser fans for EC/DC motor equivalents during scheduled maintenance or motor failure replacement."
     },
     {
       "id": "hvac-plant-room-ventilation",
       "label": "Compressor / plant room ventilation & exhaust upgrade",
       "endUseId": "hvac",
-      "sectorTags": ["Office/Professional Services", "Retail", "Hospitality", "Healthcare"],
-      "savingRange": { "low": 0.03, "high": 0.08 },
+      "sectorTags": [
+        "Office/Professional Services",
+        "Retail",
+        "Hospitality",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.03,
+        "high": 0.08
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
-      "evidence": "ASHRAE / US DOE mechanical-room guidance — inadequate ventilation and exhaust in a chiller/compressor plant room raises condensing temperature and derates compressor efficiency; ensuring adequate heat-rejection airflow typically recovers 3-8% of HVAC energy otherwise lost to this effect. Realized saving depends on ongoing airflow maintenance, not a one-off fix."
+      "evidence": "ASHRAE / US DOE mechanical-room guidance — inadequate ventilation and exhaust in a chiller/compressor plant room raises condensing temperature and derates compressor efficiency; ensuring adequate heat-rejection airflow typically recovers 3-8% of HVAC energy otherwise lost to this effect. Realized saving depends on ongoing airflow maintenance, not a one-off fix.",
+      "howToImplement": "Inspect and upgrade plant-room exhaust fans/louvres to ensure adequate airflow around chillers and compressors — usually a maintenance fix, occasionally a small capital upgrade."
     },
     {
       "id": "refrigeration-floating-head-controls",
       "label": "Refrigeration controls & floating head pressure",
       "endUseId": "refrigeration",
-      "sectorTags": ["F&B", "Retail", "Hospitality", "Logistics", "Healthcare"],
-      "savingRange": { "low": 0.08, "high": 0.15 },
+      "sectorTags": [
+        "F&B",
+        "Retail",
+        "Hospitality",
+        "Logistics",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.08,
+        "high": 0.15
+      },
       "costTier": "medium",
       "certainty": "variable",
       "effortTier": "medium",
       "evidence": "ASHRAE / US DOE — floating head pressure and refrigeration controls typically cut refrigeration energy 8-15%.",
+      "howToImplement": "Add floating head pressure controls to existing refrigeration condensing units, tuned to ambient conditions instead of a fixed setpoint.",
       "schneiderProductId": "ebo"
     },
     {
       "id": "walkin-door-strips-alarms",
       "label": "Door strip curtains & open-door alarms on walk-in coolers",
       "endUseId": "refrigeration",
-      "sectorTags": ["F&B", "Retail", "Hospitality", "Logistics"],
-      "savingRange": { "low": 0.03, "high": 0.06 },
+      "sectorTags": [
+        "F&B",
+        "Retail",
+        "Hospitality",
+        "Logistics"
+      ],
+      "savingRange": {
+        "low": 0.03,
+        "high": 0.06
+      },
       "costTier": "low",
       "certainty": "high",
       "effortTier": "low",
-      "evidence": "ENERGY STAR — door strip curtains and open-door alarms typically save 3-6% of refrigeration energy by cutting infiltration."
+      "evidence": "ENERGY STAR — door strip curtains and open-door alarms typically save 3-6% of refrigeration energy by cutting infiltration.",
+      "howToImplement": "Fit strip curtains and door-open alarms to walk-in cooler/freezer doors — a low-disruption physical retrofit."
     },
     {
       "id": "refrigeration-night-covers",
       "label": "Night covers on open refrigerated display cases",
       "endUseId": "refrigeration",
-      "sectorTags": ["Retail"],
-      "savingRange": { "low": 0.02, "high": 0.05 },
+      "sectorTags": [
+        "Retail"
+      ],
+      "savingRange": {
+        "low": 0.02,
+        "high": 0.05
+      },
       "costTier": "low",
       "certainty": "high",
       "effortTier": "low",
-      "evidence": "ENERGY STAR grocery guidance — night covers on open display cases typically save 2-5% of refrigeration energy."
+      "evidence": "ENERGY STAR grocery guidance — night covers on open display cases typically save 2-5% of refrigeration energy.",
+      "howToImplement": "Fit night covers (manual or automated) to open refrigerated display cases, closed outside trading hours."
     },
     {
       "id": "high-efficiency-refrigeration-compressors",
       "label": "High-efficiency refrigeration compressor replacement",
       "endUseId": "refrigeration",
-      "sectorTags": ["F&B", "Retail", "Logistics", "Healthcare"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "F&B",
+        "Retail",
+        "Logistics",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "high",
       "certainty": "high",
       "effortTier": "high",
-      "evidence": "ENERGY STAR — replacing aging refrigeration compressors with high-efficiency units typically saves 10-20%."
+      "evidence": "ENERGY STAR — replacing aging refrigeration compressors with high-efficiency units typically saves 10-20%.",
+      "howToImplement": "Replace aging refrigeration compressors with high-efficiency units at end-of-life or as a planned capital upgrade."
     },
     {
       "id": "refrigeration-leak-detection-repair",
       "label": "Refrigerant leak detection & repair programme",
       "endUseId": "refrigeration",
-      "sectorTags": ["F&B", "Retail", "Hospitality", "Logistics", "Healthcare"],
-      "savingRange": { "low": 0.05, "high": 0.10 },
+      "sectorTags": [
+        "F&B",
+        "Retail",
+        "Hospitality",
+        "Logistics",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.1
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
-      "evidence": "US DOE / ASHRAE — a refrigerant leak and the resulting undercharge forces the compressor to work harder to reach setpoint, typically wasting 5-10% of refrigeration energy in affected systems. A recurring maintenance action like `compressed-air-leak-survey` — savings depend on repeating the check, not a one-off fix. Repairing leaks also directly cuts Scope 1 fugitive refrigerant emissions, tracked separately via this tool's refrigerant GWP calculation (see `data/refrigerant_gwp.json`) — this ECM entry only covers the energy-saving side."
+      "evidence": "US DOE / ASHRAE — a refrigerant leak and the resulting undercharge forces the compressor to work harder to reach setpoint, typically wasting 5-10% of refrigeration energy in affected systems. A recurring maintenance action like `compressed-air-leak-survey` — savings depend on repeating the check, not a one-off fix. Repairing leaks also directly cuts Scope 1 fugitive refrigerant emissions, tracked separately via this tool's refrigerant GWP calculation (see `data/refrigerant_gwp.json`) — this ECM entry only covers the energy-saving side.",
+      "howToImplement": "Run a scheduled refrigerant leak-detection survey (ultrasonic/electronic detector) across refrigeration circuits and repair leaks found; repeat periodically as ongoing maintenance."
     },
     {
       "id": "refrigeration-low-gwp-transition",
       "label": "Low-GWP refrigerant transition (ammonia / CO₂ systems)",
       "endUseId": "refrigeration",
-      "sectorTags": ["F&B", "Retail", "Logistics", "Healthcare"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "F&B",
+        "Retail",
+        "Logistics",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "high",
       "certainty": "high",
       "effortTier": "high",
-      "evidence": "ASHRAE / US DOE industrial refrigeration guidance — ammonia (R-717) and CO₂ (R-744) systems typically run 10-20% more energy-efficient than an equivalent HFC system (e.g. R-410A, R-134a) at commercial/industrial scale, alongside a near-zero GWP versus R-410A's 2,088 (see `data/refrigerant_gwp.json`) — cuts both refrigeration energy and the Scope 1 fugitive-emissions intensity of any future leak. Major equipment replacement, not a retrofit."
+      "evidence": "ASHRAE / US DOE industrial refrigeration guidance — ammonia (R-717) and CO₂ (R-744) systems typically run 10-20% more energy-efficient than an equivalent HFC system (e.g. R-410A, R-134a) at commercial/industrial scale, alongside a near-zero GWP versus R-410A's 2,088 (see `data/refrigerant_gwp.json`) — cuts both refrigeration energy and the Scope 1 fugitive-emissions intensity of any future leak. Major equipment replacement, not a retrofit.",
+      "howToImplement": "Replace existing HFC refrigeration equipment with ammonia or CO2-based systems at end-of-life or as a planned capital upgrade — new equipment, not a refrigerant swap in existing hardware."
     },
     {
       "id": "kitchen-demand-control-ventilation",
       "label": "Demand-controlled kitchen exhaust hoods",
       "endUseId": "cooking",
-      "sectorTags": ["F&B", "Hospitality"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "F&B",
+        "Hospitality"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "medium",
       "certainty": "variable",
       "effortTier": "medium",
-      "evidence": "US DOE / ENERGY STAR — demand-controlled kitchen exhaust hoods typically cut associated fan energy 20-30%, roughly 10-20% of total cooking-area energy."
+      "evidence": "US DOE / ENERGY STAR — demand-controlled kitchen exhaust hoods typically cut associated fan energy 20-30%, roughly 10-20% of total cooking-area energy.",
+      "howToImplement": "Retrofit kitchen exhaust hoods with demand-controlled ventilation sensors that modulate fan speed to actual cooking load."
     },
     {
       "id": "energy-star-cooking-equipment",
       "label": "ENERGY STAR certified cooking equipment",
       "endUseId": "cooking",
-      "sectorTags": ["F&B", "Hospitality"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "F&B",
+        "Hospitality"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "medium",
       "certainty": "high",
       "effortTier": "medium",
-      "evidence": "ENERGY STAR — certified commercial fryers, griddles and ovens typically use 10-20% less energy than standard models."
+      "evidence": "ENERGY STAR — certified commercial fryers, griddles and ovens typically use 10-20% less energy than standard models.",
+      "howToImplement": "Replace fryers, griddles and ovens with ENERGY STAR-certified models at end-of-life or as a planned kitchen equipment refresh."
     },
     {
       "id": "compressed-air-leak-survey",
       "label": "Compressed air leak survey & repair",
       "endUseId": "compressedAirMotors",
-      "sectorTags": ["Manufacturing", "Logistics"],
-      "savingRange": { "low": 0.05, "high": 0.10 },
+      "sectorTags": [
+        "Manufacturing",
+        "Logistics"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.1
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
-      "evidence": "US DOE — compressed air leak surveys and repair typically recover 5-10% of system energy (leaks commonly waste 20-30% before repair). Recurring maintenance action — savings depend on repeating the survey, not a one-off capital fix."
+      "evidence": "US DOE — compressed air leak surveys and repair typically recover 5-10% of system energy (leaks commonly waste 20-30% before repair). Recurring maintenance action — savings depend on repeating the survey, not a one-off capital fix.",
+      "howToImplement": "Run a scheduled ultrasonic leak survey across the compressed air distribution system and repair leaks found; repeat periodically as ongoing maintenance."
     },
     {
       "id": "vsd-motors-pumps-fans",
       "label": "Variable-speed drives on process motors, pumps & fans",
       "endUseId": "compressedAirMotors",
-      "sectorTags": ["Manufacturing", "Logistics"],
-      "savingRange": { "low": 0.15, "high": 0.25 },
+      "sectorTags": [
+        "Manufacturing",
+        "Logistics"
+      ],
+      "savingRange": {
+        "low": 0.15,
+        "high": 0.25
+      },
       "costTier": "medium",
       "certainty": "high",
       "effortTier": "medium",
-      "evidence": "US DOE — VSDs on motor-driven pumps, fans and compressors typically cut that equipment's energy 15-25%."
+      "evidence": "US DOE — VSDs on motor-driven pumps, fans and compressors typically cut that equipment's energy 15-25%.",
+      "howToImplement": "Fit variable-speed drives to existing process motors, pumps and fans and commission them to modulate with actual load."
     },
     {
       "id": "process-heat-recovery",
       "label": "Waste heat recovery on process equipment",
       "endUseId": "process",
-      "sectorTags": ["Manufacturing"],
-      "savingRange": { "low": 0.05, "high": 0.12 },
+      "sectorTags": [
+        "Manufacturing"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.12
+      },
       "costTier": "high",
       "certainty": "high",
       "effortTier": "high",
-      "evidence": "US DOE — waste heat recovery on industrial process equipment typically saves 5-12% of process energy."
+      "evidence": "US DOE — waste heat recovery on industrial process equipment typically saves 5-12% of process energy.",
+      "howToImplement": "Install heat exchangers to capture waste heat from process equipment (exhaust, cooling water) and reuse it elsewhere in the facility — an engineering-led capital project."
     },
     {
       "id": "laundry-heat-recovery",
       "label": "Laundry / drain-water heat recovery",
       "endUseId": "laundry",
-      "sectorTags": ["Hospitality", "Healthcare"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "Hospitality",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "medium",
       "certainty": "high",
       "effortTier": "medium",
-      "evidence": "ENERGY STAR hospitality guidance — drain-water and laundry heat recovery typically saves 10-20% of laundry energy."
+      "evidence": "ENERGY STAR hospitality guidance — drain-water and laundry heat recovery typically saves 10-20% of laundry energy.",
+      "howToImplement": "Install drain-water or laundry heat-recovery heat exchangers to preheat incoming water using outgoing hot water/drain heat."
     },
     {
       "id": "low-flow-hotwater-fixtures",
       "label": "Low-flow fixtures & hot water system optimization",
       "endUseId": "hotwater",
-      "sectorTags": ["Hospitality", "Healthcare"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "Hospitality",
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "low",
       "certainty": "high",
       "effortTier": "low",
-      "evidence": "ENERGY STAR — low-flow fixtures and hot water system optimization typically save 10-20% of hot water energy."
+      "evidence": "ENERGY STAR — low-flow fixtures and hot water system optimization typically save 10-20% of hot water energy.",
+      "howToImplement": "Fit low-flow aerators/showerheads and optimize hot water system setpoints and recirculation scheduling — a low-disruption retrofit."
     },
     {
       "id": "datacentre-aisle-containment",
       "label": "Hot/cold aisle containment",
       "endUseId": "cooling",
-      "sectorTags": ["Data Centre"],
-      "savingRange": { "low": 0.10, "high": 0.25 },
+      "sectorTags": [
+        "Data Centre"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.25
+      },
       "costTier": "medium",
       "certainty": "high",
       "effortTier": "medium",
       "evidence": "Huawei / Eaton data centre efficiency guidance — hot/cold aisle containment typically cuts cooling energy 10-25%.",
+      "howToImplement": "Install physical containment panels/curtains to separate hot and cold aisles in the data hall, directing cooling airflow more efficiently.",
       "schneiderProductId": "ebo"
     },
     {
       "id": "datacentre-ups-upgrade",
       "label": "High-efficiency UPS replacement",
       "endUseId": "ups",
-      "sectorTags": ["Data Centre"],
-      "savingRange": { "low": 0.20, "high": 0.40 },
+      "sectorTags": [
+        "Data Centre"
+      ],
+      "savingRange": {
+        "low": 0.2,
+        "high": 0.4
+      },
       "costTier": "high",
       "certainty": "high",
       "effortTier": "high",
-      "evidence": "Data centre efficiency guidance — replacing older UPS units with high-efficiency (>97%) models typically cuts UPS losses 20-40%."
+      "evidence": "Data centre efficiency guidance — replacing older UPS units with high-efficiency (>97%) models typically cuts UPS losses 20-40%.",
+      "howToImplement": "Replace older UPS units with high-efficiency (>97%) models at end-of-life or as a planned capital upgrade."
     },
     {
       "id": "server-virtualization-consolidation",
       "label": "Server virtualization & consolidation",
       "endUseId": "itLoad",
-      "sectorTags": ["Data Centre"],
-      "savingRange": { "low": 0.10, "high": 0.30 },
+      "sectorTags": [
+        "Data Centre"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.3
+      },
       "costTier": "medium",
       "certainty": "variable",
       "effortTier": "medium",
-      "evidence": "Common data centre efficiency practice — virtualization/consolidation typically cuts IT load energy 10-30% by raising utilization."
+      "evidence": "Common data centre efficiency practice — virtualization/consolidation typically cuts IT load energy 10-30% by raising utilization.",
+      "howToImplement": "Consolidate underutilized physical servers onto fewer, more heavily-utilized hosts via virtualization — an IT infrastructure project, not a facilities one."
     },
     {
       "id": "warehouse-dock-door-seals",
       "label": "Dock door seals & loading-bay air curtains",
       "endUseId": "materialHandling",
-      "sectorTags": ["Logistics"],
-      "savingRange": { "low": 0.05, "high": 0.10 },
+      "sectorTags": [
+        "Logistics"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.1
+      },
       "costTier": "low",
       "certainty": "high",
       "effortTier": "low",
-      "evidence": "US DOE warehouse guidance — dock door seals and air curtains typically save 5-10% of material-handling-area energy via reduced infiltration."
+      "evidence": "US DOE warehouse guidance — dock door seals and air curtains typically save 5-10% of material-handling-area energy via reduced infiltration.",
+      "howToImplement": "Fit dock door seals and loading-bay air curtains to reduce infiltration at loading bays — a low-disruption physical retrofit."
     },
     {
       "id": "sterilizer-cycle-scheduling",
       "label": "Sterilizer / autoclave cycle batching & scheduling",
       "endUseId": "medicalEquipment",
-      "sectorTags": ["Healthcare"],
-      "savingRange": { "low": 0.05, "high": 0.10 },
+      "sectorTags": [
+        "Healthcare"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.1
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
-      "evidence": "Healthcare energy management guidance — batching and scheduling sterilizer/autoclave cycles typically saves 5-10% of associated energy."
+      "evidence": "Healthcare energy management guidance — batching and scheduling sterilizer/autoclave cycles typically saves 5-10% of associated energy.",
+      "howToImplement": "Batch and schedule sterilizer/autoclave cycles to run fuller loads less often, coordinated with clinical/operational workflow."
     },
     {
       "id": "plugload-power-management",
       "label": "Plug load management (smart strips, PC power management)",
       "endUseId": "plugLoads",
-      "sectorTags": ["Office/Professional Services"],
-      "savingRange": { "low": 0.10, "high": 0.20 },
+      "sectorTags": [
+        "Office/Professional Services"
+      ],
+      "savingRange": {
+        "low": 0.1,
+        "high": 0.2
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
-      "evidence": "US DOE — plug load management typically saves 10-20% of plug load energy."
+      "evidence": "US DOE — plug load management typically saves 10-20% of plug load energy.",
+      "howToImplement": "Deploy smart power strips and enable PC power management settings across workstations — a low-cost IT/facilities rollout."
     },
     {
       "id": "power-quality-submetering",
       "label": "Sub-metering & power-quality monitoring",
       "endUseId": "other",
-      "sectorTags": ["all"],
-      "savingRange": { "low": 0.05, "high": 0.10 },
+      "sectorTags": [
+        "all"
+      ],
+      "savingRange": {
+        "low": 0.05,
+        "high": 0.1
+      },
       "costTier": "low",
       "certainty": "variable",
       "effortTier": "low",
       "evidence": "Cross-portfolio benchmark — sub-metering and power-quality monitoring typically surfaces 5-10% waste via anomaly detection by enabling further optimization, not by directly reducing load itself.",
+      "howToImplement": "Install sub-meters and power-quality monitoring at key distribution boards/circuits, then review the data for anomalies (equipment left running, phase imbalance).",
       "schneiderProductId": "power-powerlogic"
     }
   ]

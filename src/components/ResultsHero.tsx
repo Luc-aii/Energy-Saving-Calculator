@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CalculationResult } from "@/lib/types/results";
 import { formatSgd, formatSgdRange, formatTonnes } from "@/lib/format";
+import { whoImplementsEcm, whenToDoEcm } from "@/lib/ecmGuidance";
 
 const CONFIDENCE_DOTS: Record<string, string> = {
   High: "●●●●●",
@@ -116,6 +117,18 @@ export function ResultsHero({ companyName, result }: { companyName: string; resu
                 <MiniHeroStat label="Monthly kWh saved" value={`${Math.round(active.kwhSavedPerMonthMid).toLocaleString("en-SG")} kWh`} />
               </div>
               <p className="mt-2 text-xs italic text-ink-soft">{active.evidence}</p>
+              <p className="mt-2 text-xs text-ink-soft">
+                <span className="font-semibold text-ink">How to implement: </span>
+                {active.howToImplement}
+              </p>
+              <p className="mt-1 text-xs text-ink-soft">
+                <span className="font-semibold text-ink">Who&apos;s typically involved: </span>
+                {whoImplementsEcm(active.effortTier)}
+              </p>
+              <p className="mt-1 text-xs text-ink-soft">
+                <span className="font-semibold text-ink">When to do it: </span>
+                {whenToDoEcm(active.costTier, active.certainty)}
+              </p>
             </div>
           )}
         </div>

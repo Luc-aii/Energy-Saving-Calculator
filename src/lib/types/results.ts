@@ -116,6 +116,15 @@ export interface EcmBreakdownItem {
   certainty: "high" | "variable";
   effortTier: "low" | "medium" | "high";
   evidence: string;
+  /** Plain-language "what you'd actually do" for this measure — distinct from `evidence`, which is the sourced saving-rate claim, not implementation guidance. */
+  howToImplement: string;
+  /** Rough order-of-magnitude cost range for this single measure (same COST_TIER_SGD bands used everywhere else) — lets every row, not just the Top 3, answer "how much does this cost." */
+  costLowSgd: number;
+  costHighSgd: number;
+  /** Cost (mid) ÷ dollarSavedPerYearMid — null when this measure saves $0 (e.g. end-use share is 0). Drives the default sort order for the full "further opportunity" list, same ranking logic as the Top 3. */
+  paybackYearsMid: number | null;
+  /** The raw tier costLowSgd/costHighSgd were bucketed from — drives the "who's typically involved" / "when to do it" guidance (see ecmGuidance.ts), which is grounded in this + effortTier/certainty rather than invented per-measure. */
+  costTier: "low" | "medium" | "high";
 }
 
 export interface EcmResultSummary {
@@ -158,6 +167,9 @@ export interface EcmRankedItem {
   certainty: "high" | "variable";
   effortTier: "low" | "medium" | "high";
   evidence: string;
+  /** Plain-language "what you'd actually do" for this measure — distinct from `evidence`, which is the sourced saving-rate claim, not implementation guidance. */
+  howToImplement: string;
+  costTier: "low" | "medium" | "high";
 }
 
 /** Estimated ongoing value of measures the company told us are already implemented/in progress — computed against current usage, not a claimed historical before/after delta (no pre-implementation baseline is known). Null when nothing was selected. */

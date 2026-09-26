@@ -18,7 +18,11 @@ export function CalibrationCurveChart({ curve }: { curve: CalibrationCurve }) {
   const pct = (v: number) => ((v - min) / (max - min)) * 100;
 
   return (
-    <div>
+    // pt-3: the emphasized "You" dot is taller (h-4) than the bar it centers on (h-2), so it overflows
+    // ~4px above the bar. Without this clearance the dot visually clashes with whatever text sits above
+    // this component (caller-supplied margin isn't reliable since it doesn't account for the marker's
+    // own overflow) — this keeps the chart safe regardless of where it's dropped in.
+    <div className="pt-3">
       <div className="relative h-2 rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-400">
         <Marker pct={pct(curve.bestInClass)} label="Best" />
         <Marker pct={pct(curve.average)} label="Avg" />

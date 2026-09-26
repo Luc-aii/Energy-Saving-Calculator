@@ -1,6 +1,6 @@
 {
-  "version": "1.0.3",
-  "lastUpdated": "2026-09-17",
+  "version": "1.0.4",
+  "lastUpdated": "2026-09-27",
   "source": "DEFRA 2026 GHG Conversion Factors (business travel updated); DEFRA 2024 (freight — see freightNote); US EPA EEIO v2.0 (spend-based fallback)",
   "spendBased": {
     "purchasedGoodsKgCo2ePerUsd": {
@@ -32,10 +32,10 @@
     "singaporeAverageOneWayKm": 15,
     "workingDaysPerYear": 250,
     "kgCo2ePerPassengerKm": {
-      "public": 0.04,
+      "public": 0.044,
       "car": 0.17
     },
-    "note": "PRD specifies 'industry average distance x mode' but does not supply a per-mode emission factor. Car (0.17) matches DEFRA's UK average-car figure almost exactly (verified via WebSearch 2026-09-17). Public transport (0.04) is still an unverified placeholder — DEFRA's UK average bus alone is ~0.075 kg/km, roughly double ours, but Singapore's public transit is MRT-heavy (electric rail is far more efficient per passenger-km than diesel buses), so a lower blended figure is plausible — just not independently confirmed for Singapore specifically. Flag for DEFRA/LTA-backed sign-off before production use."
+    "note": "PRD specifies 'industry average distance x mode' but does not supply a per-mode emission factor. Car (0.17) matches DEFRA's UK average-car figure almost exactly (verified via WebSearch 2026-09-17). Public transport (0.044) resolved 2026-09-27, replacing the earlier unverified 0.04 placeholder: SMRT-sourced per-passenger-km figures (via Eco-Business, https://www.eco-business.com/news/singapores-mrt-lines-be-graded-green-ness/) give MRT at 13.2 g/km and bus at 73 g/km; blended using LTA's published 2024 average daily ridership split (MRT 3.41M + LRT 0.21M = 48.5% rail, bus 3.84M = 51.5%, https://www.lta.gov.sg/content/dam/ltagov/who_we_are/statistics_and_publications/statistics/pdf/PT_Ridership_Yearly_2015-2025.pdf; LRT assumed to share MRT's electric-rail rate — no separate LRT figure was found) gives 0.485×13.2 + 0.515×73 ≈ 44.0 g/km. The prior placeholder (40) turns out to have been a close, defensible guess — now independently confirmed rather than flagged."
   },
   "assumptions": {
     "fxSgdToUsd": 0.786,
