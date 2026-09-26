@@ -282,6 +282,7 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     endUseBreakdown: energyEndUseBreakdown,
     selectedEcmIds: remainingEcmIds,
     totalElectricityKwh: netAnnualElectricityKwh,
+    tariffSgdPerKwh: tariff,
   });
   const alreadyImplementedEcm = computeAlreadyImplementedValue(energyEndUseBreakdown, implementedIds, netAnnualElectricityKwh, tariff);
   const topEcmRecommendations = rankRemainingEcms(inputs.universal.sector, energyEndUseBreakdown, implementedIds, netAnnualElectricityKwh, tariff);

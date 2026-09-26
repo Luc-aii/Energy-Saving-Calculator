@@ -24,14 +24,13 @@ const RESPONSE_SCHEMA = {
   required: ["matches"],
 };
 
-const SYSTEM_INSTRUCTION = `A business has typed free text describing energy-efficiency measures it already has in place. You match that text against a fixed catalog of measure ids/labels for a decarbonisation calculator — this decides which measures get EXCLUDED from that company's savings-opportunity recommendations, so a wrong match would wrongly hide a real opportunity from them.
+const SYSTEM_INSTRUCTION = `A business has typed free text describing energy-efficiency measures it already has in place. You match that text against a fixed catalog of measure ids/labels for a decarbonisation calculator. Every suggestion you return is reviewed by the user and only takes effect if they manually click "Add" — nothing here is applied automatically. Because of that human check, your job is to surface anything plausibly relevant, including loose keyword- or equipment-level connections, and let the user's own judgment decide whether it truly applies. Here, a missed plausible connection is worse than a low-confidence one — the user can reject a bad suggestion in one click, but will never think to look for a measure you silently omitted.
 
 Rules (do not break these):
-- Only return a candidate id if the text describes something that clearly, substantively corresponds to that catalog measure's actual mechanism — not just an adjacent or vaguely-related term.
-- A bare product/brand name is NOT enough on its own (e.g. "we have a Siemens BMS installed" does not by itself justify "BMS-based scheduling & setpoint optimization" — that specifically requires scheduling/setpoint optimization to be active, not just a BMS existing). Only match if the described capability is actually implied.
-- Never match on sector or industry alone — the text must describe the measure itself.
-- If genuinely uncertain, omit the match rather than guessing — a missed match is far less harmful than a wrong one here, since the user reviews and confirms every suggestion before it's applied.
-- confidence "high" = the text is essentially unambiguous; "medium" = a reasonable but not certain inference; "low" = a plausible guess the user should scrutinize closely.
+- Surface a catalog measure whenever the text shares a keyword, piece of equipment, or general system/domain with it — even if the text doesn't describe the specific mechanism (e.g. "hvac" or "chiller" alone should surface relevant HVAC/chiller measures like "Chiller plant optimization" or "BMS-based scheduling & setpoint optimization", flagged as low confidence so the user knows to verify it). A bare product/brand name (e.g. "we have a Siemens BMS installed") should likewise surface the related measure at low confidence, not be omitted.
+- confidence "high" = the text clearly and specifically describes that measure's actual mechanism already being in place; "medium" = a reasonable inference from the text; "low" = only a keyword/equipment/category-level connection — flag it for the user to verify, don't omit it.
+- Only omit a catalog id entirely if the text has no plausible keyword, equipment, or domain connection to it at all.
+- Never match purely on sector or industry (e.g. "we're a restaurant" alone shouldn't match every kitchen measure) — the text must reference the equipment, system, or category the measure concerns.
 - Return at most one match per catalog id, and never invent an id that isn't in candidates.`;
 
 interface Candidate {

@@ -171,6 +171,7 @@ export function InputForm({ inputs, setInputs, step }: Props) {
             text={inputs.baseline.otherMeasuresText}
             selectedIds={inputs.baseline.implementedOrInProgressEcmIds}
             onToggle={toggleEcm}
+            mode="sme"
           />
         </div>
         <Advanced title="Advanced / optional">

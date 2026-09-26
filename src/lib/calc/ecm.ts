@@ -107,6 +107,7 @@ interface ComputeEcmArgs {
   endUseBreakdown: EnergyEndUseItem[];
   selectedEcmIds: string[];
   totalElectricityKwh: number;
+  tariffSgdPerKwh: number;
 }
 
 /**
@@ -121,6 +122,7 @@ export function computeEcmSavingsRate({
   endUseBreakdown,
   selectedEcmIds,
   totalElectricityKwh,
+  tariffSgdPerKwh,
 }: ComputeEcmArgs): EcmResultSummary | null {
   if (selectedEcmIds.length === 0 || endUseBreakdown.length === 0) return null;
 
@@ -156,6 +158,7 @@ export function computeEcmSavingsRate({
 
     for (const m of measures) {
       const mMid = (m.savingRange.low + m.savingRange.high) / 2;
+      const kwhSavedMid = totalElectricityKwh * weight * mMid;
       breakdown.push({
         ecmId: m.id,
         label: m.label,
@@ -163,8 +166,9 @@ export function computeEcmSavingsRate({
         endUseLabel: endUse.label,
         endUseSharePct: endUse.pct,
         endUseKwh: totalElectricityKwh * weight,
-        kwhSavedMid: totalElectricityKwh * weight * mMid,
+        kwhSavedMid,
         contributionToRatePctMid: weight * mMid,
+        dollarSavedPerYearMid: kwhSavedMid * tariffSgdPerKwh,
         savingRangeLow: m.savingRange.low,
         savingRangeHigh: m.savingRange.high,
         certainty: (m.certainty ?? "high") as "high" | "variable",
@@ -291,7 +295,7 @@ export function computeAlreadyImplementedValue(
   totalElectricityKwh: number,
   tariffSgdPerKwh: number
 ): AlreadyImplementedEcmSummary | null {
-  const result = computeEcmSavingsRate({ endUseBreakdown, selectedEcmIds: implementedIds, totalElectricityKwh });
+  const result = computeEcmSavingsRate({ endUseBreakdown, selectedEcmIds: implementedIds, totalElectricityKwh, tariffSgdPerKwh });
   if (!result) return null;
   const kwhSavedPerMonthMid = (totalElectricityKwh * result.ratePctMid) / 12;
   return {

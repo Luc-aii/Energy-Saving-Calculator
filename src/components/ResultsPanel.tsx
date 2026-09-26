@@ -162,19 +162,24 @@ export function ResultsPanel({
                         <span className="rounded-full border border-border bg-white px-2 py-0.5 text-[10px] font-medium">
                           {b.certainty === "variable" ? "varies by site" : "well-documented"}
                         </span>
-                        <span>{(b.contributionToRatePctMid * 100).toFixed(1)} pts</span>
-                        <span className="font-semibold text-ink">{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr</span>
+                        <span>{(b.contributionToRatePctMid * 100).toFixed(1)} pts of Scope 2 electricity</span>
+                        <span className="font-semibold text-ink">{formatSgd(b.dollarSavedPerYearMid)}/yr</span>
                         <span className="text-ink-soft transition group-open:rotate-180">▾</span>
                       </span>
                     </summary>
                     <div className="mt-2 border-t border-border pt-2 text-xs text-ink-soft">
                       <p className="italic">{b.evidence}</p>
+                      <p className="mt-2 rounded-md bg-brand-50/50 px-2 py-1.5 text-[11px] font-semibold text-ink">
+                        Saves {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%) of your <u>{b.endUseLabel}</u> energy — which is {b.endUseSharePct.toFixed(0)}% of your <u>total Scope 2 electricity</u> — so overall this is {(b.contributionToRatePctMid * 100).toFixed(1)}% of total electricity, every year going forward.
+                      </p>
                       <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink">
-                        {b.endUseLabel} is {b.endUseSharePct.toFixed(0)}% of your electricity ≈ {Math.round(b.endUseKwh).toLocaleString("en-SG")} kWh/yr
+                        Step 1 — {b.endUseLabel} = {b.endUseSharePct.toFixed(0)}% of your electricity ≈ {Math.round(b.endUseKwh).toLocaleString("en-SG")} kWh/yr
                         <br />
-                        × this measure&apos;s {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% saving on {b.endUseLabel.toLowerCase()} energy (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%)
+                        Step 2 — × this measure&apos;s {(b.savingRangeLow * 100).toFixed(0)}–{(b.savingRangeHigh * 100).toFixed(0)}% saving on {b.endUseLabel.toLowerCase()} energy (mid {(((b.savingRangeLow + b.savingRangeHigh) / 2) * 100).toFixed(0)}%)
                         <br />
-                        = <strong>{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr saved</strong>, ≈{(b.contributionToRatePctMid * 100).toFixed(1)} points of your overall electricity
+                        Step 3 — = <strong>{Math.round(b.kwhSavedMid).toLocaleString("en-SG")} kWh/yr saved</strong>, ≈{(b.contributionToRatePctMid * 100).toFixed(1)} points of your overall electricity
+                        <br />
+                        Step 4 — × your tariff = <strong>{formatSgd(b.dollarSavedPerYearMid)}/yr</strong> (≈{formatSgd(b.dollarSavedPerYearMid / 12)}/month)
                       </p>
                     </div>
                   </details>

@@ -12,6 +12,17 @@ interface Match {
 }
 
 /**
+ * Solar/REC/EAC/PPA/green-tariff mentions have no catalog entry to match
+ * against (see ecm_catalog.json's source note — they offset or price
+ * consumption rather than reducing an end-use's energy, so they're modeled
+ * via dedicated Scope 2 fields instead). Without this check, typing "solar"
+ * here just silently returned "no confident match" with no pointer to where
+ * it actually belongs.
+ */
+const ENERGY_PROCUREMENT_PATTERN =
+  /\b(solar|photovoltaic|pv panels?|rooftop panels?|rec|recs|eac|eacs|ppa|green tariff|renewable energy certificate|energy attribute certificate|power purchase agreement)\b/i;
+
+/**
  * The free-text "anything else already in place?" field was context-only —
  * never scored, so a measure described only there (not ticked in the
  * checklist above) still showed up as a "further opportunity" recommendation
@@ -25,11 +36,13 @@ export function EcmAiMatch({
   text,
   selectedIds,
   onToggle,
+  mode = "sme",
 }: {
   sector: Sector;
   text: string | undefined;
   selectedIds: string[];
   onToggle: (id: string) => void;
+  mode?: "sme" | "mnc";
 }) {
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,9 +86,25 @@ export function EcmAiMatch({
 
   const hasText = Boolean(text?.trim());
   const suggestable = matches?.filter((m) => !selectedIds.includes(m.id) && !addedIds.includes(m.id)) ?? null;
+  const mentionsEnergyProcurement = Boolean(text && ENERGY_PROCUREMENT_PATTERN.test(text));
 
   return (
     <div className="flex flex-col gap-2">
+      {mentionsEnergyProcurement && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[11px] text-amber-900">
+          Solar, RECs, EACs, PPAs and green tariffs aren&apos;t catalog measures here — they offset or price your electricity rather than
+          reducing an end-use&apos;s energy, so the AI match below won&apos;t find anything for this. Enter it in{" "}
+          {mode === "mnc" ? (
+            <>the <strong>Sites — Scope 2</strong> section&apos;s <strong>Renewable coverage %</strong> field</>
+          ) : (
+            <>
+              the <strong>Scope 2 — Electricity</strong> section&apos;s <strong>Onsite solar generation</strong> toggle (physical solar) and/or{" "}
+              <strong>Renewable / green tariff coverage %</strong> field (RECs, PPAs, green tariffs)
+            </>
+          )}
+          {" "}instead — it directly reduces your calculated cost and emissions there.
+        </p>
+      )}
       <button
         type="button"
         onClick={runMatch}

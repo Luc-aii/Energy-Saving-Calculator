@@ -107,6 +107,8 @@ export interface EcmBreakdownItem {
   endUseKwh: number;
   kwhSavedMid: number;
   contributionToRatePctMid: number;
+  /** kwhSavedMid × the tariff used for this calculation — same rate as everywhere else in the results, so this measure's row and the headline $ figures stay consistent. */
+  dollarSavedPerYearMid: number;
   /** The measure's own saving range as % of its end-use's energy (not total electricity) — e.g. 0.30-0.60 for LED retrofits against lighting. */
   savingRangeLow: number;
   savingRangeHigh: number;

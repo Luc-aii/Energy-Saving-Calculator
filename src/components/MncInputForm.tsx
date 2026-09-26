@@ -166,6 +166,7 @@ export function MncInputForm({ inputs, setInputs, step }: Props) {
             text={inputs.baseline.otherMeasuresText}
             selectedIds={inputs.baseline.implementedOrInProgressEcmIds}
             onToggle={toggleEcm}
+            mode="mnc"
           />
         </div>
         <Advanced title="Advanced / optional">

@@ -1,8 +1,8 @@
 {
-  "version": "1.1.0",
-  "lastUpdated": "2026-09-24",
+  "version": "1.2.0",
+  "lastUpdated": "2026-09-26",
   "proxy": true,
-  "source": "Typical savings ranges compiled from US DOE / ENERGY STAR / ASHRAE efficiency-measure guidance — international benchmark ranges, not Singapore-metered results. Each range is the measure's saving as a % of the energy used by its own end-use category (e.g. a refrigeration measure's % is of refrigeration energy, not total electricity). Air-side economizers/free-cooling are intentionally excluded — not applicable to Singapore's tropical climate. `certainty` (\"high\" = hardware/capital measure with a fixed physical effect; \"variable\" = controls/software/behavioral measure whose realized saving depends on ongoing configuration and use, per site-visit feedback that BMS/setpoint-type savings are not guaranteed) and `effortTier` (\"low\"/\"medium\"/\"high\" implementation effort/disruption, distinct from cost) were added this phase to support ROI+effort-based ranking and honest confidence labeling — both are judgement calls made from the same evidence base, not separately re-sourced. Two chiller-plant measures (`high-efficiency-chiller-replacement`, `chiller-plant-optimization-controls`) were added 2026-09-24 to close a gap for commercial-building clients (Office/Professional Services, Retail, Hospitality, Healthcare) whose HVAC bill is chiller-plant-dominated — previously only fan/pump VSDs and generic BMS scheduling covered the HVAC end-use, with no measure addressing the chiller itself.",
+  "source": "Typical savings ranges compiled from US DOE / ENERGY STAR / ASHRAE efficiency-measure guidance — international benchmark ranges, not Singapore-metered results. Each range is the measure's saving as a % of the energy used by its own end-use category (e.g. a refrigeration measure's % is of refrigeration energy, not total electricity). Air-side economizers/free-cooling are intentionally excluded — not applicable to Singapore's tropical climate. `certainty` (\"high\" = hardware/capital measure with a fixed physical effect; \"variable\" = controls/software/behavioral measure whose realized saving depends on ongoing configuration and use, per site-visit feedback that BMS/setpoint-type savings are not guaranteed) and `effortTier` (\"low\"/\"medium\"/\"high\" implementation effort/disruption, distinct from cost) were added this phase to support ROI+effort-based ranking and honest confidence labeling — both are judgement calls made from the same evidence base, not separately re-sourced. Two chiller-plant measures (`high-efficiency-chiller-replacement`, `chiller-plant-optimization-controls`) were added 2026-09-24 to close a gap for commercial-building clients (Office/Professional Services, Retail, Hospitality, Healthcare) whose HVAC bill is chiller-plant-dominated — previously only fan/pump VSDs and generic BMS scheduling covered the HVAC end-use, with no measure addressing the chiller itself. Four more measures (`hvac-ec-fan-motor-retrofit`, `hvac-plant-room-ventilation`, `refrigeration-leak-detection-repair`, `refrigeration-low-gwp-transition`) were added 2026-09-26 from a client-supplied chiller/refrigeration ECM list, closing gaps in fan-motor hardware, plant-room heat rejection, and refrigerant-leak/transition measures. Onsite solar generation and RECs/EACs from that same list were deliberately NOT added here: they don't reduce an end-use's energy consumption the way every other catalog measure does (solar generates power, RECs/EACs are a market-based accounting claim), so scoring them against an end-use would either misstate or silently zero their impact — they're already modeled correctly elsewhere via the dedicated onsite-solar and renewable-coverage inputs in Scope 2.",
   "measures": [
     {
       "id": "led-lighting-retrofit",
@@ -75,6 +75,28 @@
       "schneiderProductId": "ebo"
     },
     {
+      "id": "hvac-ec-fan-motor-retrofit",
+      "label": "High-efficiency EC/DC fan motor retrofit (rooftop units & condensers)",
+      "endUseId": "hvac",
+      "sectorTags": ["Office/Professional Services", "Retail", "Hospitality", "Healthcare"],
+      "savingRange": { "low": 0.08, "high": 0.15 },
+      "costTier": "medium",
+      "certainty": "high",
+      "effortTier": "medium",
+      "evidence": "US DOE / ENERGY STAR — replacing fixed-speed AC induction motors with electronically-commutated (EC/DC) motors on rooftop-unit and condenser fans typically cuts fan energy 15-30%, roughly 8-15% of total HVAC energy. Often installed as a hardware alternative or complement to a VSD retrofit on the same fans (see `hvac-vsd-fans-pumps`) rather than stacked for the full combined range."
+    },
+    {
+      "id": "hvac-plant-room-ventilation",
+      "label": "Compressor / plant room ventilation & exhaust upgrade",
+      "endUseId": "hvac",
+      "sectorTags": ["Office/Professional Services", "Retail", "Hospitality", "Healthcare"],
+      "savingRange": { "low": 0.03, "high": 0.08 },
+      "costTier": "low",
+      "certainty": "variable",
+      "effortTier": "low",
+      "evidence": "ASHRAE / US DOE mechanical-room guidance — inadequate ventilation and exhaust in a chiller/compressor plant room raises condensing temperature and derates compressor efficiency; ensuring adequate heat-rejection airflow typically recovers 3-8% of HVAC energy otherwise lost to this effect. Realized saving depends on ongoing airflow maintenance, not a one-off fix."
+    },
+    {
       "id": "refrigeration-floating-head-controls",
       "label": "Refrigeration controls & floating head pressure",
       "endUseId": "refrigeration",
@@ -118,6 +140,28 @@
       "certainty": "high",
       "effortTier": "high",
       "evidence": "ENERGY STAR — replacing aging refrigeration compressors with high-efficiency units typically saves 10-20%."
+    },
+    {
+      "id": "refrigeration-leak-detection-repair",
+      "label": "Refrigerant leak detection & repair programme",
+      "endUseId": "refrigeration",
+      "sectorTags": ["F&B", "Retail", "Hospitality", "Logistics", "Healthcare"],
+      "savingRange": { "low": 0.05, "high": 0.10 },
+      "costTier": "low",
+      "certainty": "variable",
+      "effortTier": "low",
+      "evidence": "US DOE / ASHRAE — a refrigerant leak and the resulting undercharge forces the compressor to work harder to reach setpoint, typically wasting 5-10% of refrigeration energy in affected systems. A recurring maintenance action like `compressed-air-leak-survey` — savings depend on repeating the check, not a one-off fix. Repairing leaks also directly cuts Scope 1 fugitive refrigerant emissions, tracked separately via this tool's refrigerant GWP calculation (see `data/refrigerant_gwp.json`) — this ECM entry only covers the energy-saving side."
+    },
+    {
+      "id": "refrigeration-low-gwp-transition",
+      "label": "Low-GWP refrigerant transition (ammonia / CO₂ systems)",
+      "endUseId": "refrigeration",
+      "sectorTags": ["F&B", "Retail", "Logistics", "Healthcare"],
+      "savingRange": { "low": 0.10, "high": 0.20 },
+      "costTier": "high",
+      "certainty": "high",
+      "effortTier": "high",
+      "evidence": "ASHRAE / US DOE industrial refrigeration guidance — ammonia (R-717) and CO₂ (R-744) systems typically run 10-20% more energy-efficient than an equivalent HFC system (e.g. R-410A, R-134a) at commercial/industrial scale, alongside a near-zero GWP versus R-410A's 2,088 (see `data/refrigerant_gwp.json`) — cuts both refrigeration energy and the Scope 1 fugitive-emissions intensity of any future leak. Major equipment replacement, not a retrofit."
     },
     {
       "id": "kitchen-demand-control-ventilation",

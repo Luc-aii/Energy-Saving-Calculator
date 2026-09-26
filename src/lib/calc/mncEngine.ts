@@ -256,6 +256,7 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
     endUseBreakdown: energyEndUseBreakdown,
     selectedEcmIds: remainingEcmIds,
     totalElectricityKwh: totalGridKwh,
+    tariffSgdPerKwh: weightedTariff,
   });
   const alreadyImplementedEcm = computeAlreadyImplementedValue(energyEndUseBreakdown, implementedIds, totalGridKwh, weightedTariff);
   const topEcmRecommendations = rankRemainingEcms(inputs.sector, energyEndUseBreakdown, implementedIds, totalGridKwh, weightedTariff);
