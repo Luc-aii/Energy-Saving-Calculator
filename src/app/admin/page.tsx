@@ -87,7 +87,7 @@ export default function AdminPage() {
             production build these files are bundled at build time, so a change here still needs a redeploy to reach users.
           </p>
         </div>
-        <button onClick={downloadCsv} className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
+        <button type="button" onClick={downloadCsv} className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
           Download factor set (CSV)
         </button>
       </div>
@@ -147,7 +147,7 @@ export default function AdminPage() {
                         >
                           {saving ? "Saving..." : "Publish change"}
                         </button>
-                        <button className="rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700" onClick={() => setEditingKey(null)}>
+                        <button type="button" className="rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700" onClick={() => setEditingKey(null)}>
                           Cancel
                         </button>
                       </div>

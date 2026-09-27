@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SmeWizard } from "@/components/SmeWizard";
-import { McnWizard } from "@/components/McnWizard";
+import { MncWizard } from "@/components/MncWizard";
 import { calculateSme } from "@/lib/calc/engine";
 import { calculateMnc } from "@/lib/calc/mncEngine";
 import { compareScenarios } from "@/lib/calc/scenarioComparison";
@@ -83,7 +83,7 @@ export default function Home() {
         </main>
       ) : (
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
-          <McnWizard
+          <MncWizard
             inputs={mncInputs}
             setInputs={setMncInputs}
             result={mncResult}

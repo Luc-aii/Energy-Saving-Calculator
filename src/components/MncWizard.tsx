@@ -22,7 +22,7 @@ const ResultsPanel = dynamic(() => import("./ResultsPanel").then((m) => m.Result
 
 const ALL_STEPS = [...MNC_INPUT_STEPS, "Your results"];
 
-export function McnWizard({
+export function MncWizard({
   inputs,
   setInputs,
   result,

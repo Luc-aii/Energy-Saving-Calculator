@@ -73,7 +73,11 @@ export function ActionPlanChart({ result }: { result: CalculationResult }) {
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
             <XAxis dataKey="year" fontSize={12} />
-            <YAxis fontSize={12} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+            {/* domain starts at 0, not Recharts' default auto-zoomed range — without this, the axis
+                anchors to whatever narrow band the current data happens to span, so the line's
+                visual steepness stops meaning anything relative to the actual dollar amount (a
+                S$5k swing and a S$500k swing can end up looking equally dramatic). */}
+            <YAxis fontSize={12} domain={[0, "auto"]} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
             <Tooltip formatter={(v) => formatSgd(Number(v))} />
             <Legend />
             {/* Red is drawn thicker and first (bottom layer) so that when it exactly equals blue —

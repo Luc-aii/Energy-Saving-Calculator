@@ -10,7 +10,7 @@ import { CalibrationCurveChart } from "./CalibrationCurve";
 import { EnergyEndUseChart } from "./EnergyEndUseChart";
 import { SectorSpotlight } from "./SectorSpotlight";
 import { SavingsBreakdownChart } from "./SavingsBreakdownChart";
-import { getTopEndUse } from "@/lib/calc/ecm";
+import { getTopEndUse, sortEcmBreakdownForDisplay } from "@/lib/calc/ecm";
 import { whoImplementsEcm, whenToDoEcm, caseStudyForSector, productForEcm } from "@/lib/ecmGuidance";
 import { KpiDashboard } from "./KpiDashboard";
 import { CtaPanel } from "./CtaPanel";
@@ -178,22 +178,7 @@ export function ResultsPanel({
           the ones featured in the hero, rather than making the reader cross-reference the two lists themselves. */}
       {result.ecmResult && (() => {
         const top3Rank = new Map(result.topEcmRecommendations.map((t, i) => [t.ecmId, i + 1]));
-        // Badged Top 3 are always pinned first, in their official rankRemainingEcms order — never
-        // re-derived here. The remainder is then ranked by its own payback (cost ÷ $ saved), so "why is
-        // this ranked here" is self-evident from position for everything past #3. Sorting the WHOLE list
-        // by this card's own paybackYearsMid (without pinning) let a near-tied unbadged measure land
-        // ahead of a badged one, since the two paybacks are computed via separate code paths (monthly vs.
-        // annual) whose floating-point ties don't always break the same way — the badge is the single
-        // source of truth for the top 3, not a re-sort that can silently disagree with it.
-        const sorted = result.ecmResult.breakdown.slice().sort((a, b) => {
-          const rankA = top3Rank.get(a.ecmId) ?? Infinity;
-          const rankB = top3Rank.get(b.ecmId) ?? Infinity;
-          if (rankA !== rankB) return rankA - rankB;
-          if (a.paybackYearsMid === null && b.paybackYearsMid === null) return 0;
-          if (a.paybackYearsMid === null) return 1;
-          if (b.paybackYearsMid === null) return -1;
-          return a.paybackYearsMid - b.paybackYearsMid;
-        });
+        const sorted = sortEcmBreakdownForDisplay(result.ecmResult.breakdown, result.topEcmRecommendations);
         const implementedCount = result.alreadyImplementedEcm?.ids.length ?? 0;
         return (
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">

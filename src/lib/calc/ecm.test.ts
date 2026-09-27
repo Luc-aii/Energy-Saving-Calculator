@@ -6,6 +6,7 @@ import {
   allRemainingEcmIdsForSector,
   rankRemainingEcms,
   computeAlreadyImplementedValue,
+  sortEcmBreakdownForDisplay,
 } from "./ecm";
 
 const SECTOR = "Office/Professional Services";
@@ -138,6 +139,53 @@ describe("rankRemainingEcms vs. computeEcmSavingsRate — ranking consistency", 
     const breakdown = getEndUseBreakdown(SECTOR, undefined, undefined);
     const ranked = rankRemainingEcms(SECTOR, breakdown, ["led-lighting-retrofit"], TOTAL_KWH, TARIFF, 100);
     expect(ranked.find((r) => r.ecmId === "led-lighting-retrofit")).toBeUndefined();
+  });
+});
+
+describe("sortEcmBreakdownForDisplay", () => {
+  // Extracted from ResultsPanel.tsx (was inline JSX) — locks in the exact tie-break fix from
+  // earlier this session: the Top 3 badge order is pinned first regardless of ties, never
+  // re-derived by re-sorting the whole list on its own paybackYearsMid.
+  it("always pins the Top 3 first, in their official rankRemainingEcms order", () => {
+    const endUseBreakdown = getEndUseBreakdown(SECTOR, undefined, undefined);
+    const remainingIds = allRemainingEcmIdsForSector(SECTOR, []);
+    const ecmResult = computeEcmSavingsRate({
+      endUseBreakdown,
+      selectedEcmIds: remainingIds,
+      totalElectricityKwh: TOTAL_KWH,
+      tariffSgdPerKwh: TARIFF,
+    });
+    const top3 = rankRemainingEcms(SECTOR, endUseBreakdown, [], TOTAL_KWH, TARIFF, 3);
+    expect(ecmResult).not.toBeNull();
+    const sorted = sortEcmBreakdownForDisplay(ecmResult!.breakdown, top3);
+
+    const top3Ids = top3.map((t) => t.ecmId);
+    expect(sorted.slice(0, top3Ids.length).map((b) => b.ecmId)).toEqual(top3Ids);
+  });
+
+  it("ranks everything past the Top 3 by its own payback, nulls last", () => {
+    const endUseBreakdown = getEndUseBreakdown(SECTOR, undefined, undefined);
+    const remainingIds = allRemainingEcmIdsForSector(SECTOR, []);
+    const ecmResult = computeEcmSavingsRate({
+      endUseBreakdown,
+      selectedEcmIds: remainingIds,
+      totalElectricityKwh: TOTAL_KWH,
+      tariffSgdPerKwh: TARIFF,
+    });
+    const top3 = rankRemainingEcms(SECTOR, endUseBreakdown, [], TOTAL_KWH, TARIFF, 3);
+    const sorted = sortEcmBreakdownForDisplay(ecmResult!.breakdown, top3);
+
+    const top3Ids = new Set(top3.map((t) => t.ecmId));
+    const rest = sorted.filter((b) => !top3Ids.has(b.ecmId));
+    for (let i = 1; i < rest.length; i++) {
+      const prev = rest[i - 1].paybackYearsMid;
+      const curr = rest[i].paybackYearsMid;
+      if (prev === null) {
+        expect(curr).toBeNull();
+      } else if (curr !== null) {
+        expect(curr).toBeGreaterThanOrEqual(prev);
+      }
+    }
   });
 });
 

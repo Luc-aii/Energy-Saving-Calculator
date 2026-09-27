@@ -1,14 +1,24 @@
 {
-  "version": "1.1.0",
-  "lastUpdated": "2026-09-22",
-  "source": "EMA / BCA Green Mark data, except Data Centre — see its own 'note' field for sources and revision date",
+  "version": "1.2.0",
+  "lastUpdated": "2026-09-27",
+  "source": "EMA / BCA Green Mark data, except Data Centre — see its own 'note' field for sources and revision date. Hospitality, Office/Professional Services, Retail (default) and Healthcare corrected 2026-09-27 against BCA's own primary-source Building Energy Benchmarks spreadsheet (go.gov.sg/bca-bebr-data, 'Building Energy Benchmarks' sheet, 2024 data) — see per-sector 'note' fields for the exact mapping and sample sizes. Manufacturing, F&B and Logistics are not covered by BEBR (a commercial/institutional-building dataset, not industrial) and are unchanged.",
   "unit": "kWh/m2/year",
   "sectors": {
     "Manufacturing": { "bestInClass": 80, "average": 180, "poor": 320 },
-    "Hospitality": { "bestInClass": 200, "average": 350, "poor": 550 },
+    "Hospitality": {
+      "bestInClass": 200,
+      "average": 245,
+      "poor": 311,
+      "note": "Corrected 2026-09-27 from an unsourced 200/350/550 band. BCA's 2024 Building Energy Benchmarks primary-source spreadsheet (go.gov.sg/bca-bebr-data), 'Hotel Buildings' row, n=79: top-quartile threshold <=200, median (2nd/3rd quartile boundary) 245, bottom-quartile threshold 311. bestInClass = top-quartile threshold, average = median, poor = bottom-quartile threshold (a prior WebSearch-only research pass could not resolve conflicting secondary summaries for this figure; this pass went to BCA's own primary spreadsheet instead)."
+    },
     "F&B": { "bestInClass": 400, "average": 700, "poor": 1100 },
     "Retail": {
-      "default": { "bestInClass": 250, "average": 400, "poor": 600 },
+      "default": {
+        "bestInClass": 244,
+        "average": 454,
+        "poor": 536,
+        "note": "Corrected 2026-09-27 from an unsourced 250/400/600 band. BCA's 2024 Building Energy Benchmarks primary-source spreadsheet (go.gov.sg/bca-bebr-data), 'Retail Buildings' row, n=114: top-quartile threshold <=244, median (2nd/3rd quartile boundary) 454, bottom-quartile threshold 536. bestInClass = top-quartile threshold, average = median, poor = bottom-quartile threshold. Real Singapore retail runs meaningfully more energy-intensive at the average/poor end than the prior placeholder assumed — driven mostly by refrigeration and long operating hours, per the same dynamic the 'supermarket' sub-profile below was already added to capture."
+      },
       "supermarket": {
         "bestInClass": 350,
         "average": 500,
@@ -16,8 +26,18 @@
         "note": "Added so a supermarket/grocery client is no longer benchmarked against general-merchandise retail (usability finding M2 — a refrigeration-heavy store always looked 'worst quartile' otherwise). Derived from US EIA CBECS-style supermarket EUI of 40-60 kWh/sq ft/year (~430-645 kWh/m2/year), converted and centred; no Singapore-specific supermarket study was found. Refrigeration is ~50% of a supermarket's load. Source: apollo.eco 'Energy Use Intensity: Top Retail and F&B Benchmarks', LSBU 'Benchmarking of supermarket energy consumption'."
       }
     },
-    "Office/Professional Services": { "bestInClass": 120, "average": 200, "poor": 350 },
-    "Healthcare": { "bestInClass": 300, "average": 500, "poor": 750 },
+    "Office/Professional Services": {
+      "bestInClass": 111,
+      "average": 144,
+      "poor": 182,
+      "note": "Corrected 2026-09-27 from an unsourced 120/200/350 band. BCA's 2024 Building Energy Benchmarks primary-source spreadsheet (go.gov.sg/bca-bebr-data), 'Office Buildings' row, n=228: top-quartile threshold <=111, median (2nd/3rd quartile boundary) 144, bottom-quartile threshold 182. bestInClass = top-quartile threshold, average = median, poor = bottom-quartile threshold. The prior band overstated both average and poor substantially (200 and 350 vs. the real 144 and 182) — a typical Singapore office was being benchmarked as more efficient than it actually is relative to its peers."
+    },
+    "Healthcare": {
+      "bestInClass": 250,
+      "average": 305,
+      "poor": 354,
+      "note": "Corrected 2026-09-27 from an unsourced 300/500/750 band. BCA's 2024 Building Energy Benchmarks primary-source spreadsheet (go.gov.sg/bca-bebr-data), 'Hospitals or Specialist Clinic' row, n=21: top-quartile threshold <=250, median (2nd/3rd quartile boundary) 305, bottom-quartile threshold 354. bestInClass = top-quartile threshold, average = median, poor = bottom-quartile threshold. BEBR separately reports Nursing Home (n=42) and Polyclinic/Private Clinic (n=12) bands, both materially lower than hospitals; this sector uses the hospital/specialist-clinic band as the more representative default for a generic 'Healthcare' classification, not a nursing home or polyclinic specifically."
+    },
     "Logistics": {
       "default": { "bestInClass": 80, "average": 180, "poor": 320 },
       "coldStorage": {

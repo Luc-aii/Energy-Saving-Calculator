@@ -292,6 +292,34 @@ export function rankRemainingEcms(
 }
 
 /**
+ * Orders the full "further opportunity" ECM breakdown for display: the Top 3 badged measures
+ * are always pinned first, in their official rankRemainingEcms order — never re-derived here.
+ * The remainder is then ranked by its own payback (cost ÷ $ saved), so "why is this ranked here"
+ * is self-evident from position for everything past #3. Sorting the WHOLE list by this card's own
+ * paybackYearsMid (without pinning) let a near-tied unbadged measure land ahead of a badged one,
+ * since the two paybacks are computed via separate code paths (monthly vs. annual) whose
+ * floating-point ties don't always break the same way — the badge is the single source of truth
+ * for the top 3, not a re-sort that can silently disagree with it. (Moved out of ResultsPanel.tsx,
+ * which had this ranking rule embedded directly in JSX rather than alongside the rest of the ECM
+ * ranking logic.)
+ */
+export function sortEcmBreakdownForDisplay(
+  breakdown: EcmResultSummary["breakdown"],
+  topEcmRecommendations: EcmRankedItem[]
+): EcmResultSummary["breakdown"] {
+  const top3Rank = new Map(topEcmRecommendations.map((t, i) => [t.ecmId, i + 1]));
+  return breakdown.slice().sort((a, b) => {
+    const rankA = top3Rank.get(a.ecmId) ?? Infinity;
+    const rankB = top3Rank.get(b.ecmId) ?? Infinity;
+    if (rankA !== rankB) return rankA - rankB;
+    if (a.paybackYearsMid === null && b.paybackYearsMid === null) return 0;
+    if (a.paybackYearsMid === null) return 1;
+    if (b.paybackYearsMid === null) return -1;
+    return a.paybackYearsMid - b.paybackYearsMid;
+  });
+}
+
+/**
  * Estimated ongoing value of measures already implemented/in progress,
  * computed against the company's current usage — not a claimed historical
  * before/after delta, since no pre-implementation baseline is known. Reuses
