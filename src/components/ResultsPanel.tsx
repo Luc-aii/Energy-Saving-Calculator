@@ -11,7 +11,7 @@ import { EnergyEndUseChart } from "./EnergyEndUseChart";
 import { SectorSpotlight } from "./SectorSpotlight";
 import { SavingsBreakdownChart } from "./SavingsBreakdownChart";
 import { getTopEndUse } from "@/lib/calc/ecm";
-import { whoImplementsEcm, whenToDoEcm, caseStudyForSector } from "@/lib/ecmGuidance";
+import { whoImplementsEcm, whenToDoEcm, caseStudyForSector, productForEcm } from "@/lib/ecmGuidance";
 import { KpiDashboard } from "./KpiDashboard";
 import { CtaPanel } from "./CtaPanel";
 import { AiSummaryCard } from "./AiSummaryCard";
@@ -255,6 +255,16 @@ export function ResultsPanel({
                       <EcmField label="How to implement">{b.howToImplement}</EcmField>
                       <EcmField label="Who's typically involved">{whoImplementsEcm(b.effortTier)}</EcmField>
                       <EcmField label="When to do it">{whenToDoEcm(b.costTier, b.certainty)}</EcmField>
+                      {(() => {
+                        const product = productForEcm(b.ecmId);
+                        return (
+                          <EcmField label="Delivered via">
+                            {product
+                              ? `${product.name} — ${product.covers}`
+                              : "Equipment/hardware upgrade — not a bundled Schneider digital product; pairs well with EcoStruxure Building Operation for ongoing control."}
+                          </EcmField>
+                        );
+                      })()}
 
                       <details className="rounded-md border border-border bg-white p-2">
                         <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-wide text-ink-soft">Show the calculation</summary>
