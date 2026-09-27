@@ -155,6 +155,8 @@ export interface EcmRankedItem {
   ecmId: string;
   label: string;
   endUseId: string;
+  /** Ordinal position (1 = best payback), dense-ranked so measures tied on payback share the same number — a tie for 3rd shows as two "#3" items rather than one arbitrarily bumping the other out of the Top 3. */
+  rank: number;
   kwhSavedPerMonthMid: number;
   dollarSavedPerMonthMid: number;
   costLowSgd: number;

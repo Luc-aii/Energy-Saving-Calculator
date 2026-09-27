@@ -33,6 +33,9 @@ export function ResultsHero({
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const top3 = result.topEcmRecommendations;
+  // Dense-ranked: a tie on payback means two measures can both carry rank 3, so this can hold more
+  // than 3 items. topRankCount is the true "Top N" to show in copy — array length isn't, once tied.
+  const topRankCount = top3.reduce((max, t) => Math.max(max, t.rank), 0);
   const active = top3[Math.min(activeIdx, Math.max(top3.length - 1, 0))];
   const activeProduct = active ? productForEcm(active.ecmId) : null;
   const eeg = grantsData.grants.find((g) => g.id === "eeg-base");
@@ -162,18 +165,21 @@ export function ResultsHero({
       {/* 2. Top 3 recommended ECMs — the "what do I buy" step, and the bridge into Schneider's product catalogue. */}
       {top3.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-          <h3 className="text-sm font-bold text-ink">Top {top3.length} ways to save further</h3>
-          <p className="mb-3 mt-0.5 text-xs text-ink-soft">Ranked by payback (cost ÷ saving) — least effort, most gain first.</p>
+          <h3 className="text-sm font-bold text-ink">Top {topRankCount} ways to save further</h3>
+          <p className="mb-3 mt-0.5 text-xs text-ink-soft">
+            Ranked by payback (cost ÷ saving) — least effort, most gain first.
+            {top3.length > topRankCount && " Two measures tied on payback share the same rank."}
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {top3.map((m, i) => (
               <button
                 key={m.ecmId}
                 onClick={() => setActiveIdx(i)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  i === activeIdx ? "bg-brand-500 text-white" : "bg-brand-50 text-brand-700 hover:bg-brand-100"
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all hover:-translate-y-0.5 ${
+                  i === activeIdx ? "bg-brand-500 text-white shadow-md" : "bg-brand-50 text-brand-700 hover:bg-brand-100 hover:shadow-sm"
                 }`}
               >
-                #{i + 1} {m.label}
+                #{m.rank} {m.label}
               </button>
             ))}
           </div>

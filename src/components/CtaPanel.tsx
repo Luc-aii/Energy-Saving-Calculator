@@ -106,7 +106,7 @@ function CtaButton({ label, onClick, disabled }: { label: string; onClick: () =>
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg border border-border px-3 py-2 text-left text-xs font-medium text-ink-soft transition hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
+      className="rounded-lg border border-border px-3 py-2 text-left text-xs font-medium text-ink-soft transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:bg-brand-50 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
     >
       {label}
     </button>

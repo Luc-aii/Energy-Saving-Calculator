@@ -231,14 +231,23 @@ export function allRemainingEcmIdsForSector(sector: Sector, implementedIds: stri
     .map((m) => m.id);
 }
 
+/** Sentinel distinguishing "no item processed yet" from a legitimate `null` payback value. */
+const UNSET = Symbol("unset");
+
 /**
  * Ranks the not-yet-implemented, sector-relevant ECMs by payback (cost ÷
  * annual $ saved) — one honest number that combines cost and benefit,
  * matching the "ROI-based, least effort most gain" request without inventing
  * an opaque multi-factor weighted score. Each measure is evaluated
  * individually (not combined multiplicatively like computeEcmSavingsRate) so
- * its own payback is a standalone, presentable figure. Returns the top
- * `limit` (fewer if the sector has fewer relevant remaining measures).
+ * its own payback is a standalone, presentable figure.
+ *
+ * Dense-ranked rather than sliced at a flat `limit`: two measures can land on
+ * exactly the same payback (same cost tier, same saving range, same end-use
+ * share — genuinely identical inputs, not floating-point noise), and picking
+ * one over the other via array order would be an arbitrary, unexplainable
+ * call. Both get rank 3 instead, so the Top 3 can return 4 items when the 3rd
+ * place is tied — callers show `rank`, not array position.
  */
 export function rankRemainingEcms(
   sector: Sector,
@@ -256,7 +265,7 @@ export function rankRemainingEcms(
     (m) => (m.sectorTags.includes("all") || m.sectorTags.includes(sector)) && !implementedSet.has(m.id)
   );
 
-  const ranked: EcmRankedItem[] = candidates.map((m) => {
+  const ranked: Omit<EcmRankedItem, "rank">[] = candidates.map((m) => {
     const weight = weightByEndUse.get(m.endUseId) ?? 0;
     const mMid = (m.savingRange.low + m.savingRange.high) / 2;
     const kwhSavedPerMonthMid = (totalElectricityKwh * weight * mMid) / 12;
@@ -288,7 +297,18 @@ export function rankRemainingEcms(
     return a.paybackYearsMid - b.paybackYearsMid;
   });
 
-  return ranked.slice(0, limit);
+  const withRank: EcmRankedItem[] = [];
+  let rank = 0;
+  let lastPayback: number | null | typeof UNSET = UNSET;
+  for (const item of ranked) {
+    if (lastPayback === UNSET || item.paybackYearsMid !== lastPayback) {
+      rank += 1;
+      lastPayback = item.paybackYearsMid;
+    }
+    if (rank > limit) break;
+    withRank.push({ ...item, rank });
+  }
+  return withRank;
 }
 
 /**
@@ -307,7 +327,7 @@ export function sortEcmBreakdownForDisplay(
   breakdown: EcmResultSummary["breakdown"],
   topEcmRecommendations: EcmRankedItem[]
 ): EcmResultSummary["breakdown"] {
-  const top3Rank = new Map(topEcmRecommendations.map((t, i) => [t.ecmId, i + 1]));
+  const top3Rank = new Map(topEcmRecommendations.map((t) => [t.ecmId, t.rank]));
   return breakdown.slice().sort((a, b) => {
     const rankA = top3Rank.get(a.ecmId) ?? Infinity;
     const rankB = top3Rank.get(b.ecmId) ?? Infinity;

@@ -140,6 +140,37 @@ describe("rankRemainingEcms vs. computeEcmSavingsRate — ranking consistency", 
     const ranked = rankRemainingEcms(SECTOR, breakdown, ["led-lighting-retrofit"], TOTAL_KWH, TARIFF, 100);
     expect(ranked.find((r) => r.ecmId === "led-lighting-retrofit")).toBeUndefined();
   });
+
+  it("dense-ranks: two measures with identical formula inputs (same end-use, cost tier, saving range) share one rank", () => {
+    // hvac-ec-fan-motor-retrofit and chiller-plant-optimization-controls are both hvac end-use,
+    // both "medium" cost tier, both an 8-15% saving range — identical payback for any kWh/tariff,
+    // by construction, not by coincidence. They must land on the same rank, never one arbitrarily
+    // ahead of the other.
+    const breakdown = getEndUseBreakdown(SECTOR, undefined, undefined);
+    const ranked = rankRemainingEcms(SECTOR, breakdown, [], TOTAL_KWH, TARIFF, 100);
+    const a = ranked.find((r) => r.ecmId === "hvac-ec-fan-motor-retrofit");
+    const b = ranked.find((r) => r.ecmId === "chiller-plant-optimization-controls");
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    expect(a!.paybackYearsMid).toBe(b!.paybackYearsMid);
+    expect(a!.rank).toBe(b!.rank);
+  });
+
+  it("returns more than `limit` items when the boundary rank is tied, instead of arbitrarily dropping one", () => {
+    const breakdown = getEndUseBreakdown(SECTOR, undefined, undefined);
+    const unlimited = rankRemainingEcms(SECTOR, breakdown, [], TOTAL_KWH, TARIFF, 100);
+    const tiedRank = unlimited.find((r) => r.ecmId === "hvac-ec-fan-motor-retrofit")!.rank;
+    const atBoundary = rankRemainingEcms(SECTOR, breakdown, [], TOTAL_KWH, TARIFF, tiedRank);
+    expect(atBoundary.map((r) => r.ecmId)).toContain("hvac-ec-fan-motor-retrofit");
+    expect(atBoundary.map((r) => r.ecmId)).toContain("chiller-plant-optimization-controls");
+    // Every returned item's rank is within the requested limit — array length can exceed `limit`,
+    // but rank never does.
+    for (const item of atBoundary) expect(item.rank).toBeLessThanOrEqual(tiedRank);
+    // Nothing past the tied rank leaks in.
+    const oneRankLower = rankRemainingEcms(SECTOR, breakdown, [], TOTAL_KWH, TARIFF, tiedRank - 1);
+    expect(oneRankLower.map((r) => r.ecmId)).not.toContain("hvac-ec-fan-motor-retrofit");
+    expect(oneRankLower.map((r) => r.ecmId)).not.toContain("chiller-plant-optimization-controls");
+  });
 });
 
 describe("sortEcmBreakdownForDisplay", () => {

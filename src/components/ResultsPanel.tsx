@@ -177,9 +177,11 @@ export function ResultsPanel({
           Top-3 recommended measures are pulled to the front and badged so it's obvious which of these rows are
           the ones featured in the hero, rather than making the reader cross-reference the two lists themselves. */}
       {result.ecmResult && (() => {
-        const top3Rank = new Map(result.topEcmRecommendations.map((t, i) => [t.ecmId, i + 1]));
+        const top3Rank = new Map(result.topEcmRecommendations.map((t) => [t.ecmId, t.rank]));
         const sorted = sortEcmBreakdownForDisplay(result.ecmResult.breakdown, result.topEcmRecommendations);
         const implementedCount = result.alreadyImplementedEcm?.ids.length ?? 0;
+        const topRankCount = result.topEcmRecommendations.reduce((max, t) => Math.max(max, t.rank), 0);
+        const hasTie = result.topEcmRecommendations.length > topRankCount;
         return (
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
             <h3 className="mb-1 text-sm font-bold text-ink">
@@ -192,7 +194,8 @@ export function ResultsPanel({
               {implementedCount > 0
                 ? `Excludes the ${implementedCount} measure(s) you told us you already have or are rolling out — those are credited separately in "You're already saving" above, not counted as further opportunity here.`
                 : "You haven't told us you have any of these measures yet, so every catalog measure for your sector appears below as further opportunity."}
-              {" "}The Top {result.topEcmRecommendations.length} badged below are the same ones highlighted above — they&apos;re first here too, since this list is sorted by the same payback ranking.
+              {" "}The Top {topRankCount} badged below are the same ones highlighted above — they&apos;re first here too, since this list is sorted by the same payback ranking.
+              {hasTie && " Two measures tied on payback share the same rank, so more than one row can carry the same badge."}
             </p>
             <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 p-2.5 text-xs text-sky-800">
               <strong>These rows won&apos;t sum to the headline figure, on purpose:</strong> each measure&apos;s $/yr below is computed
@@ -207,7 +210,7 @@ export function ResultsPanel({
                 return (
                   <details
                     key={b.ecmId}
-                    className={`ecm-detail group rounded-lg border p-3 open:bg-brand-50/30 ${rank ? "border-brand-300 bg-brand-50/20" : "border-border"}`}
+                    className={`ecm-detail group rounded-lg border p-3 shadow-sm shadow-transparent transition-all open:bg-brand-50/30 hover:-translate-y-0.5 hover:shadow-md ${rank ? "border-brand-300 bg-brand-50/20" : "border-border"}`}
                   >
                     <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="flex items-center gap-2">

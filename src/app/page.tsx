@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <div className="min-h-full w-full max-w-full overflow-x-hidden bg-page">
-      <header className="no-print border-b border-border bg-card px-4 py-4 sm:px-6">
+      <header className="no-print sticky top-0 z-20 border-b border-border bg-card/80 px-4 py-4 backdrop-blur-md sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-y-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-ink">EcoStruxure Value Advisor</h1>
