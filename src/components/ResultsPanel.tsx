@@ -203,12 +203,19 @@ export function ResultsPanel({
             <p className="mb-1 text-xs text-ink-soft">
               Bottom-up from your sector&apos;s Energy Conservation Measures — range {(result.ecmResult.ratePctLow * 100).toFixed(0)}–{(result.ecmResult.ratePctHigh * 100).toFixed(0)}%, replacing the sector calibration curve. Sorted by payback (cost ÷ $ saved), fastest-returning first — click a measure for the mechanism, cost, and the exact calculation behind its number.
             </p>
-            <p className="mb-3 text-xs text-ink-soft">
+            <p className="mb-1 text-xs text-ink-soft">
               {implementedCount > 0
                 ? `Excludes the ${implementedCount} measure(s) you told us you already have or are rolling out — those are credited separately in "You're already saving" above, not counted as further opportunity here.`
                 : "You haven't told us you have any of these measures yet, so every catalog measure for your sector appears below as further opportunity."}
               {" "}The Top {result.topEcmRecommendations.length} badged below are the same ones highlighted above — they&apos;re first here too, since this list is sorted by the same payback ranking.
             </p>
+            <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 p-2.5 text-xs text-sky-800">
+              <strong>These rows won&apos;t sum to the headline figure, on purpose:</strong> each measure&apos;s $/yr below is computed
+              on its own. Adding them up across measures that share the same part of your building (e.g. several HVAC measures
+              together) will run higher than the {(result.ecmResult.ratePctMid * 100).toFixed(0)}% headline rate above implies — that
+              rate already accounts for diminishing returns between overlapping measures, which each individual row deliberately
+              doesn&apos;t.
+            </div>
             <div className="flex flex-col gap-2">
               {sorted.map((b) => {
                 const rank = top3Rank.get(b.ecmId);
