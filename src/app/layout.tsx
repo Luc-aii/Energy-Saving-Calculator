@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PEAK Calculator",
+  title: "EcoStruxure Value Advisor",
   description: "Schneider Electric Emissions-to-Dollar Calculator",
 };
 

@@ -3,6 +3,8 @@ import tariffConfig from "@data/tariff_config.json";
 import scope3Factors from "@data/scope3_factors.json";
 import fuelPrices from "@data/fuel_prices.json";
 import productMapping from "@data/product_mapping.json";
+import carbonTaxSchedule from "@data/carbon_tax_schedule.json";
+import grantsData from "@data/grants.json";
 import type { StalenessWarning } from "@/lib/types/results";
 
 function monthsSince(dateStr: string, now: Date): number {
@@ -18,6 +20,12 @@ export function checkStaleness(now: Date = new Date()): StalenessWarning[] {
     { dataset: "DEFRA Scope 3 factors", lastUpdated: scope3Factors.lastUpdated, thresholdMonths: 14 },
     { dataset: "Fuel pump prices", lastUpdated: fuelPrices.lastUpdated, thresholdMonths: 3 },
     { dataset: "Schneider product evidence & saving ranges", lastUpdated: productMapping.lastUpdated, thresholdMonths: 12 },
+    // Legislated years are fixed once published, but the 2028-2029 interpolation and 2030 scenario
+    // targets are a modelling assumption (see the file's own "notes") that should be re-checked
+    // periodically against NEA/MSE announcements — this was previously the one sourced figure the
+    // whole carbon-tax-liability narrative depends on with no staleness check at all.
+    { dataset: "Carbon tax schedule (NEA/MSE)", lastUpdated: carbonTaxSchedule.lastUpdated, thresholdMonths: 18 },
+    { dataset: "EEG grant terms (EnterpriseSG)", lastUpdated: grantsData.lastUpdated, thresholdMonths: 12 },
   ];
 
   const warnings: StalenessWarning[] = [];

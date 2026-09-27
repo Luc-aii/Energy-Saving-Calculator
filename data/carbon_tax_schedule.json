@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2025-01-15",
-  "source": "NEA / MSE Singapore carbon tax trajectory",
+  "version": "1.0.1",
+  "lastUpdated": "2026-09-27",
+  "source": "NEA / MSE Singapore carbon tax trajectory — re-verified 2026-09-27 against MSE's Carbon Pricing Act page, NCCS, Climate Impact X, and the World Bank Carbon Pricing Dashboard. All legislated and indicative figures below (2024-25: $25, 2026-27: $45, 2030 target: $50-80) are unchanged and still current; official rates for 2028-2029 have still not been legislated/announced.",
   "currency": "SGD",
   "legislated": {
     "2024": 25,

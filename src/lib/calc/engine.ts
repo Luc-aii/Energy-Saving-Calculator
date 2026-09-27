@@ -338,8 +338,6 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
     const grantSgd = 0;
     const totalSavingSgd = energySavingSgd + carbonTaxSavingSgd + grantSgd;
     cumulativeSavingSgd += totalSavingSgd;
-    const doNothingCarbonTaxSgd = isLiable ? carbonAvoidedTCo2e * rate : 0;
-    const differenceSgd = totalSavingSgd + doNothingCarbonTaxSgd;
 
     yearRows.push({
       year,
@@ -351,8 +349,6 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
       totalSavingSgd,
       cumulativeSavingSgd,
       carbonAvoidedTCo2e,
-      doNothingCarbonTaxSgd,
-      differenceSgd,
     });
   }
 

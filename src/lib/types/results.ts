@@ -10,8 +10,6 @@ export interface YearRow {
   totalSavingSgd: number;
   cumulativeSavingSgd: number;
   carbonAvoidedTCo2e: number;
-  doNothingCarbonTaxSgd: number;
-  differenceSgd: number;
 }
 
 export interface ComplianceFlag {

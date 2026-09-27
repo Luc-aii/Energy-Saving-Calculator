@@ -303,7 +303,6 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
     const carbonTaxSavingSgd = isLiable ? carbonAvoidedTCo2e * rate : 0;
     const totalSavingSgd = energySavingSgd + carbonTaxSavingSgd;
     cumulativeSavingSgd += totalSavingSgd;
-    const doNothingCarbonTaxSgd = isLiable ? carbonAvoidedTCo2e * rate : 0;
 
     yearRows.push({
       year,
@@ -315,8 +314,6 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
       totalSavingSgd,
       cumulativeSavingSgd,
       carbonAvoidedTCo2e,
-      doNothingCarbonTaxSgd,
-      differenceSgd: totalSavingSgd + doNothingCarbonTaxSgd,
     });
   }
 

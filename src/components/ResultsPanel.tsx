@@ -2,26 +2,16 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CalculationResult, ScenarioSummary } from "@/lib/types/results";
 import { formatSgd, formatTonnes } from "@/lib/format";
 import { buildResultContext } from "@/lib/ai/resultContext";
 import { CalibrationCurveChart } from "./CalibrationCurve";
 import { EnergyEndUseChart } from "./EnergyEndUseChart";
 import { SectorSpotlight } from "./SectorSpotlight";
+import { SavingsBreakdownChart } from "./SavingsBreakdownChart";
 import { getTopEndUse } from "@/lib/calc/ecm";
-import { whoImplementsEcm, whenToDoEcm } from "@/lib/ecmGuidance";
+import { whoImplementsEcm, whenToDoEcm, caseStudyForSector } from "@/lib/ecmGuidance";
 import { KpiDashboard } from "./KpiDashboard";
 import { CtaPanel } from "./CtaPanel";
 import { AiSummaryCard } from "./AiSummaryCard";
@@ -60,16 +50,8 @@ export function ResultsPanel({
   // mechanism/math, not just whichever rows the viewer happened to expand.
   useEffect(() => {
     if (!printMode) return;
-    document.querySelectorAll<HTMLDetailsElement>(".ecm-detail, .ecm-detail details").forEach((d) => (d.open = true));
+    document.querySelectorAll<HTMLDetailsElement>(".ecm-detail, .ecm-detail details, .assumptions-detail").forEach((d) => (d.open = true));
   }, [printMode]);
-
-  const chartData = result.yearRows.map((r) => ({
-    year: `Y${r.year}`,
-    "Act now (cumulative saving)": Math.round(r.cumulativeSavingSgd),
-    "Do nothing (carbon tax paid)": Math.round(
-      result.yearRows.slice(0, r.year).reduce((sum, row) => sum + row.doNothingCarbonTaxSgd, 0)
-    ),
-  }));
 
   const carbonPriceData = result.yearRows
     .filter((r, i) => i === 0 || r.carbonTaxRateUsed !== result.yearRows[i - 1].carbonTaxRateUsed || i === result.yearRows.length - 1)
@@ -106,16 +88,89 @@ export function ResultsPanel({
         </button>
       </div>
 
-      {showGeneral && <ResultsHero companyName={companyName} result={result} />}
+      {showGeneral && <ResultsHero companyName={companyName} result={result} mode={mode} />}
 
       {showIndepth && (
       <>
       {/*
-        Ordered most → least important to a decision-maker reading past the hero: the action plan
-        and its money math first, then the emissions/energy context that explains *why*, then
-        supporting charts and methodology, then compliance/notes/assumptions last. Sections gate on
-        having real data so an empty/irrelevant block never takes up space.
+        Headline flow (saving range, breakdown, Top 3, cost-of-inaction) already ran in the hero
+        above. This tab picks up with the supporting case for a decision-maker reading further:
+        benchmark position + case study, then the full carbon picture, then the detailed
+        methodology behind the headline numbers, then compliance/notes/assumptions last. Sections
+        gate on having real data so an empty/irrelevant block never takes up space.
       */}
+
+      {/* Benchmark position — where you sit vs. sector best/average/poor, plus a matching Schneider case study (social proof). */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+        <h3 className="text-sm font-bold text-ink">Benchmark position</h3>
+        <p className="mt-1 text-xs text-ink-soft">{result.sectorPositionLabel}</p>
+        <div className="mt-3">
+          <CalibrationCurveChart curve={result.calibration} />
+        </div>
+        {(() => {
+          const caseStudy = caseStudyForSector(sector);
+          return (
+            <div className="mt-4 border-t border-border pt-3">
+              <p className="text-xs font-semibold text-ink">
+                Proof this is achievable — a real Schneider deployment, for reference:
+              </p>
+              <p className="mt-0.5 text-[10px] text-ink-soft">
+                Not necessarily at your exact position on the curve above — shown to demonstrate real, achievable results, not as a
+                direct comparison point.
+              </p>
+              <div className="mt-2 rounded-lg border border-brand-100 bg-brand-50 p-3 text-xs text-brand-800">
+                <p className="font-semibold">{caseStudy.name}</p>
+                <p className="mt-0.5 text-brand-700">{caseStudy.detail}</p>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Carbon picture — full Scope 1+2 tonnes; Scope 3 is shown as tonnes only, never converted to dollars. */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+        <h3 className="text-sm font-bold text-ink">Carbon picture</h3>
+        <div className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <MiniStat label="Scope 1" value={formatTonnes(result.baselineScope1TCo2e)} />
+          <MiniStat label="Scope 2" value={formatTonnes(result.baselineScope2TCo2e)} />
+          <MiniStat label="Total Scope 1+2" value={formatTonnes(result.totalScope12TCo2e)} />
+          <MiniStat label="Scope 3 (context only)" value={formatTonnes(result.baselineScope3TCo2e)} />
+        </div>
+        {result.totalScope12TCo2e > 0 && (
+          <p className="mt-3 rounded-lg bg-brand-50 p-2.5 text-xs text-brand-700">
+            Of that, the measures below could avoid <strong>{formatTonnes(result.monthlyCo2eAvoidedTonnesMid * 12)}/year</strong> — about{" "}
+            <strong>{Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}%</strong> of what you have today.
+          </p>
+        )}
+        {(result.emissionsBreakdown.scope1BySource.length > 0 || result.emissionsBreakdown.scope3ByCategory.length > 0) && (
+          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-border pt-3 sm:grid-cols-2">
+            {result.emissionsBreakdown.scope1BySource.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-ink">Scope 1 — by source</p>
+                <EmissionsBreakdownBars items={result.emissionsBreakdown.scope1BySource} total={result.baselineScope1TCo2e} />
+              </div>
+            )}
+            {result.emissionsBreakdown.scope3ByCategory.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-ink">Scope 3 — by category</p>
+                <EmissionsBreakdownBars items={result.emissionsBreakdown.scope3ByCategory} total={result.baselineScope3TCo2e} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* % breakdown by building area — the quick visual version of the detailed ECM list right below. */}
+      {result.ecmResult && result.ecmResult.breakdown.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+          <h3 className="text-sm font-bold text-ink">Where your {(result.ecmResult.ratePctMid * 100).toFixed(0)}% saving comes from</h3>
+          <p className="mb-3 mt-0.5 text-xs text-ink-soft">
+            Grouped by the part of the building each measure affects — click a measure below for its full mechanism, cost, and how to
+            implement it.
+          </p>
+          <SavingsBreakdownChart breakdown={result.ecmResult.breakdown} />
+        </div>
+      )}
 
       {/* ECM breakdown — every further-opportunity measure, not just the Top 3 highlighted above. Each row expands
           into how that specific measure works and the exact math behind its kWh figure, not just the end number.
@@ -212,6 +267,25 @@ export function ResultsPanel({
                           <br />
                           × your tariff = <strong>{formatSgd(b.dollarSavedPerYearMid)}/yr</strong> (≈{formatSgd(b.dollarSavedPerYearMid / 12)}/month)
                         </p>
+                        {/* Payback and its cost input weren't previously shown anywhere in the math — only as
+                            an already-computed badge on the summary row, with no way to see where it came
+                            from. Sourcing note on cost is deliberately blunt: it's a bucket, not a quote. */}
+                        <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink">
+                          Estimated cost: &quot;{b.costTier}&quot; tier ≈ {formatSgd(b.costLowSgd)}–{formatSgd(b.costHighSgd)} (mid{" "}
+                          {formatSgd((b.costLowSgd + b.costHighSgd) / 2)}) — a rough order-of-magnitude bucket applied to every
+                          &quot;{b.costTier}&quot;-tier measure in the catalog, not a quote for your specific site.
+                          <br />
+                          Payback = cost (mid {formatSgd((b.costLowSgd + b.costHighSgd) / 2)}) ÷{" "}
+                          {formatSgd(b.dollarSavedPerYearMid)}/yr saved
+                          {b.paybackYearsMid !== null ? (
+                            <>
+                              {" "}
+                              = <strong>{b.paybackYearsMid.toFixed(1)} years</strong>
+                            </>
+                          ) : (
+                            " = n/a (this measure saves S$0/yr against your inputs)"
+                          )}
+                        </p>
                       </details>
                     </div>
                   </details>
@@ -264,29 +338,6 @@ export function ResultsPanel({
             &quot;Carbon tax saving&quot; is S$0 throughout: your facility isn&apos;t a direct NEA/IRAS taxpayer, so that cost is already folded into the energy saving above rather than counted twice.
           </p>
         )}
-      </div>
-
-      {/* Chart */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="text-sm font-bold text-ink">Act now vs. do nothing</h3>
-        {!isLiable && (
-          <p className="mt-1 text-xs text-ink-soft">
-            The red line is flat at S$0 because your facility isn&apos;t a direct carbon taxpayer — see &quot;Regulatory exposure check&quot; below.
-          </p>
-        )}
-        <div className="mt-2 h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="year" fontSize={12} />
-              <YAxis fontSize={12} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <Tooltip formatter={(v) => formatSgd(Number(v))} />
-              <Legend />
-              <Line type="monotone" dataKey="Act now (cumulative saving)" stroke="#059669" strokeWidth={2} dot={false} isAnimationActive={false} />
-              <Line type="monotone" dataKey="Do nothing (carbon tax paid)" stroke="#dc2626" strokeWidth={2} dot={false} strokeDasharray="4 4" isAnimationActive={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
       </div>
 
       {/* Conservative / Base / Optimistic comparison */}
@@ -360,43 +411,6 @@ export function ResultsPanel({
           </div>
         </div>
       )}
-
-      {/* Baseline emissions */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="text-sm font-bold text-ink">Your current footprint</h3>
-        <div className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <MiniStat label="Scope 1" value={formatTonnes(result.baselineScope1TCo2e)} />
-          <MiniStat label="Scope 2" value={formatTonnes(result.baselineScope2TCo2e)} />
-          <MiniStat label="Total Scope 1+2" value={formatTonnes(result.totalScope12TCo2e)} />
-          <MiniStat label="Scope 3 (context only)" value={formatTonnes(result.baselineScope3TCo2e)} />
-        </div>
-        {result.totalScope12TCo2e > 0 && (
-          <p className="mt-3 rounded-lg bg-brand-50 p-2.5 text-xs text-brand-700">
-            Of that, the measures below could avoid <strong>{formatTonnes(result.monthlyCo2eAvoidedTonnesMid * 12)}/year</strong> — about{" "}
-            <strong>{Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}%</strong> of what you have today.
-          </p>
-        )}
-        <p className="mt-3 text-xs text-ink-soft">{result.sectorPositionLabel}</p>
-        <div className="mt-3">
-          <CalibrationCurveChart curve={result.calibration} />
-        </div>
-        {(result.emissionsBreakdown.scope1BySource.length > 0 || result.emissionsBreakdown.scope3ByCategory.length > 0) && (
-          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-border pt-3 sm:grid-cols-2">
-            {result.emissionsBreakdown.scope1BySource.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-ink">Scope 1 — by source</p>
-                <EmissionsBreakdownBars items={result.emissionsBreakdown.scope1BySource} total={result.baselineScope1TCo2e} />
-              </div>
-            )}
-            {result.emissionsBreakdown.scope3ByCategory.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-ink">Scope 3 — by category</p>
-                <EmissionsBreakdownBars items={result.emissionsBreakdown.scope3ByCategory} total={result.baselineScope3TCo2e} />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* Energy end-use breakdown */}
       {result.energyEndUseBreakdown.length > 0 && (
@@ -472,10 +486,10 @@ export function ResultsPanel({
         </div>
       </div>
 
-      {/* Stated assumptions */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
-        <h3 className="mb-2 text-sm font-bold text-ink">Illustration basis & assumptions</h3>
-        <table className="w-full text-left text-xs">
+      {/* Assumptions & data sources — collapsed by default so anyone checking the math can, without cluttering the page. */}
+      <details className="assumptions-detail rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
+        <summary className="cursor-pointer text-sm font-bold text-ink">Assumptions & data sources</summary>
+        <table className="mt-2 w-full text-left text-xs">
           <tbody>
             {result.assumptions.map((a) => (
               <tr key={a.label} className="border-b border-border last:border-0">
@@ -487,7 +501,7 @@ export function ResultsPanel({
           </tbody>
         </table>
         <p className="mt-2 text-[10px] text-ink-soft">Data version {result.dataVersion}</p>
-      </div>
+      </details>
 
       {/* Confidence */}
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">

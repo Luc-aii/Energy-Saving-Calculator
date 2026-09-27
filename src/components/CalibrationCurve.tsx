@@ -29,7 +29,10 @@ export function CalibrationCurveChart({ curve }: { curve: CalibrationCurve }) {
         <Marker pct={pct(curve.poor)} label="Poor" />
         <Marker pct={pct(curve.yourValue)} label="You" sublabel={`${curve.yourValue} ${curve.unit}`} emphasize />
       </div>
-      <div className="mt-6 flex justify-between text-[10px] text-ink-soft">
+      {/* mt-10: clears the two-line "You" label (name + kWh/m² sublabel) sitting below the bar — mt-6
+          was sized for the single-line Best/Avg/Poor labels and started clipping into "You" once its
+          vertical anchoring was fixed to sit level with the others. */}
+      <div className="mt-10 flex justify-between text-[10px] text-ink-soft">
         <span>{curve.bestInClass} {curve.unit}</span>
         <span>{curve.poor} {curve.unit}</span>
       </div>
@@ -44,24 +47,26 @@ function Marker({ pct, label, sublabel, emphasize }: { pct: number; label: strin
   const offScale = pct < 0 || pct > 100;
   const clamped = Math.min(Math.max(pct, 0), 100);
   return (
-    <div
-      className="absolute top-1/2 flex -translate-y-1/2 flex-col items-center"
-      style={{ left: `${clamped}%` }}
-    >
+    // No -translate-y-1/2 (and no flex column) on this outer anchor — that was centering the whole
+    // label stack, so "You" (two lines: label + sublabel) sat visibly higher than Best/Avg/Poor
+    // (one line), since half of a taller stack is a bigger upward offset. The dot/tick below centers
+    // itself independently, so it lands exactly on the bar's centerline no matter how tall the label
+    // stack underneath it is.
+    <div className="absolute top-1/2" style={{ left: `${clamped}%` }}>
       <div
         className={
           emphasize
-            ? "h-4 w-4 -translate-x-1/2 rounded-full border-2 border-white bg-ink shadow"
-            : "h-2 w-0.5 -translate-x-1/2 bg-ink-soft"
+            ? "h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ink shadow"
+            : "h-2 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-ink-soft"
         }
       />
-      <span className={`mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] ${emphasize ? "font-bold text-ink" : "text-ink-soft"}`}>
-        {label}
-        {offScale ? "*" : ""}
-      </span>
-      {sublabel && (
-        <span className="-translate-x-1/2 whitespace-nowrap text-[10px] text-ink-soft">{sublabel}</span>
-      )}
+      <div className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap text-center">
+        <span className={`block text-[10px] ${emphasize ? "font-bold text-ink" : "text-ink-soft"}`}>
+          {label}
+          {offScale ? "*" : ""}
+        </span>
+        {sublabel && <span className="block text-[10px] text-ink-soft">{sublabel}</span>}
+      </div>
     </div>
   );
 }

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import type { CalculationResult } from "@/lib/types/results";
 import { formatSgd, formatSgdRange, formatTonnes } from "@/lib/format";
-import { whoImplementsEcm, whenToDoEcm } from "@/lib/ecmGuidance";
+import { whoImplementsEcm, whenToDoEcm, productForEcm } from "@/lib/ecmGuidance";
+import { ActionPlanChart } from "./ActionPlanChart";
+import grantsData from "@data/grants.json";
 
 const CONFIDENCE_DOTS: Record<string, string> = {
   High: "●●●●●",
@@ -12,74 +14,152 @@ const CONFIDENCE_DOTS: Record<string, string> = {
 };
 
 /**
- * The "top 5/6" the user asked for, shown first and fast: payback, the Top 3
- * further Energy Conservation Measures (ranked by payback — least effort,
- * most gain), long-run projected savings, monthly $ and CO2e saved, and —
- * only if they told us what's already in place — what that's already worth.
- * Everything else lives in ResultsPanel below this, as secondary detail.
+ * Ordered to match the pitch flow a decision-maker actually wants, fastest first: (1) one
+ * headline card with the saving range, payback and confidence rating — "is this worth my time",
+ * (2) the Top 3 ECMs to actually buy plus the Schneider product that delivers each — "what do I
+ * buy", (3) the cost-of-inaction chart — the urgency argument. The full per-measure % breakdown,
+ * benchmark position, carbon picture, methodology and assumptions live in the In-depth tab below —
+ * a first-time user doesn't need a 10-measure grouped breakdown before they've even seen the Top 3.
  */
-export function ResultsHero({ companyName, result }: { companyName: string; result: CalculationResult }) {
+export function ResultsHero({
+  companyName,
+  result,
+  mode,
+}: {
+  companyName: string;
+  result: CalculationResult;
+  /** EEG Base (the grant nudged in the Top 3 card below) is SME-only per grants.json eligibility — omitted for MNC. */
+  mode?: "SME" | "MNC";
+}) {
   const [activeIdx, setActiveIdx] = useState(0);
   const top3 = result.topEcmRecommendations;
   const active = top3[Math.min(activeIdx, Math.max(top3.length - 1, 0))];
+  const activeProduct = active ? productForEcm(active.ecmId) : null;
+  const eeg = grantsData.grants.find((g) => g.id === "eeg-base");
+  const finalYearRow = result.yearRows[result.yearRows.length - 1];
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 1. Headline card — the answer to "is this worth my time" comes first. */}
       <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{companyName}</p>
         <h2 className="mt-1 text-xl font-bold text-ink">Save money. Lower cost. Improve efficiency.</h2>
         <p className="mt-1 text-sm text-ink-soft">
           What&apos;s possible for your Scope 1 + 2 footprint, based on your own numbers — not a generic percentage.
         </p>
-      </div>
 
-      {result.criticalWarnings.length > 0 && (
-        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-          <ul className="list-disc pl-4">
-            {result.criticalWarnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {result.criticalWarnings.length > 0 && (
+          <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+            <ul className="list-disc pl-4">
+              {result.criticalWarnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      {/*
-        The core pitch, first and biggest: what you're carrying today, and what's realistically
-        recoverable — in both dollars and tonnes, side by side. Emissions get a % of footprint so
-        the sustainability case reads as "meaningfully less," not just an abstract tonnage.
-      */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">What you have today</p>
-          <p className="mt-2 text-2xl font-bold text-ink">{formatTonnes(result.totalScope12TCo2e)}<span className="text-sm font-medium text-ink-soft">/year</span></p>
-          <p className="text-xs text-ink-soft">Scope 1+2 emissions</p>
-          <p className="mt-3 text-lg font-bold text-ink">{formatSgd(result.monthlyCurrentEnergyCostSgd * 12)}<span className="text-sm font-medium text-ink-soft">/year</span></p>
-          <p className="text-xs text-ink-soft">energy + carbon tax cost, at today&apos;s rates</p>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">What you have today</p>
+            <p className="mt-2 text-2xl font-bold text-ink">
+              {formatTonnes(result.totalScope12TCo2e)}
+              <span className="text-sm font-medium text-ink-soft">/year</span>
+            </p>
+            <p className="text-xs text-ink-soft">Scope 1+2 emissions</p>
+            <p className="mt-3 text-lg font-bold text-ink">
+              {formatSgd(result.monthlyCurrentEnergyCostSgd * 12)}
+              <span className="text-sm font-medium text-ink-soft">/year</span>
+            </p>
+            <p className="text-xs text-ink-soft">energy + carbon tax cost, at today&apos;s rates</p>
+          </div>
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">What you could save</p>
+            <p className="mt-2 text-2xl font-bold text-ink">
+              {formatTonnes(result.monthlyCo2eAvoidedTonnesMid * 12)}
+              <span className="text-sm font-medium text-ink-soft">/year</span>
+            </p>
+            <p className="text-xs text-ink-soft">
+              CO2e avoided
+              {result.totalScope12TCo2e > 0 &&
+                ` — about ${Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}% of what you have today`}
+            </p>
+            <p className="mt-3 text-lg font-bold text-ink">
+              {formatSgdRange(result.confidence.year1Range.low, result.confidence.year1Range.high)}
+            </p>
+            <p className="text-xs text-ink-soft">energy cost saved in year 1, from the measures below</p>
+          </div>
         </div>
-        <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">What you could save</p>
-          <p className="mt-2 text-2xl font-bold text-ink">
-            {formatTonnes(result.monthlyCo2eAvoidedTonnesMid * 12)}<span className="text-sm font-medium text-ink-soft">/year</span>
+
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <HeroStat label="Payback period" value={result.paybackYears ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"} big />
+          <HeroStat label="Monthly $ saved" value={formatSgdRange(result.monthlySavingSgdRange.low, result.monthlySavingSgdRange.high)} />
+          <HeroStat label="Monthly CO2e avoided" value={formatTonnes(result.monthlyCo2eAvoidedTonnesMid)} />
+          <HeroStat
+            label="10-year projected savings"
+            value={formatSgdRange(result.confidence.tenYearRange.low, result.confidence.tenYearRange.high)}
+          />
+          <HeroStat label="Confidence" value={`${CONFIDENCE_DOTS[result.confidence.level]} ${result.confidence.level}`} />
+          {result.computedPue !== null && <HeroStat label="Power Usage Effectiveness (PUE)" value={result.computedPue.toFixed(2)} />}
+        </div>
+
+        {finalYearRow && (result.confidence.tenYearRange.high > 0 || result.confidence.tenYearRange.low > 0) && (
+          <p className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs font-medium text-red-700">
+            Put another way: doing nothing costs you {formatSgdRange(result.confidence.tenYearRange.low, result.confidence.tenYearRange.high)} by{" "}
+            {finalYearRow.calendarYear} — the same 10-year figure above, just given up instead of kept.
           </p>
-          <p className="text-xs text-ink-soft">
-            CO2e avoided
-            {result.totalScope12TCo2e > 0 &&
-              ` — about ${Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}% of what you have today`}
-          </p>
-          <p className="mt-3 text-lg font-bold text-ink">{formatSgdRange(result.confidence.year1Range.low, result.confidence.year1Range.high)}</p>
-          <p className="text-xs text-ink-soft">energy cost saved in year 1, from the measures below</p>
-        </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <HeroStat label="Payback period" value={result.paybackYears ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"} big />
-        <HeroStat label="Monthly $ saved" value={formatSgdRange(result.monthlySavingSgdRange.low, result.monthlySavingSgdRange.high)} />
-        <HeroStat label="Monthly CO2e avoided" value={formatTonnes(result.monthlyCo2eAvoidedTonnesMid)} />
-        <HeroStat label="10-year projected savings" value={formatSgdRange(result.confidence.tenYearRange.low, result.confidence.tenYearRange.high)} />
-        <HeroStat label="Confidence" value={`${CONFIDENCE_DOTS[result.confidence.level]} ${result.confidence.level}`} />
-        {result.computedPue !== null && <HeroStat label="Power Usage Effectiveness (PUE)" value={result.computedPue.toFixed(2)} />}
-      </div>
+      {/* 1.5. Combined already-captured + further-available — for a customer who's already implemented
+          something, "what am I saving" and "what more could I save" were previously two disconnected
+          cards the reader had to add up themselves. This ties them into one progress-to-full-potential
+          number, using the same rates/figures already shown elsewhere on the page (no new math). */}
+      {result.alreadyImplementedEcm &&
+        (() => {
+          const alreadyRatePct = result.alreadyImplementedEcm.ratePctMid;
+          const alreadyMonthlySgd = result.alreadyImplementedEcm.dollarSavedPerMonthMid;
+          const furtherRatePct = result.ecmResult?.ratePctMid ?? 0;
+          const totalRatePct = alreadyRatePct + furtherRatePct;
+          const progressPct = totalRatePct > 0 ? (alreadyRatePct / totalRatePct) * 100 : 100;
+          const furtherMonthlyMid = (result.monthlySavingSgdRange.low + result.monthlySavingSgdRange.high) / 2;
+          return (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <h3 className="text-sm font-bold text-ink">Your full sustainability program</h3>
+              <p className="mt-1 text-xs text-ink-soft">
+                The {result.alreadyImplementedEcm.ids.length} measure(s) you&apos;ve already implemented, plus everything still
+                recommended further — combined into one progress-to-full-potential view.
+              </p>
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
+                <div
+                  className="h-2.5 rounded-full bg-emerald-500"
+                  style={{ width: `${Math.min(Math.max(progressPct, 0), 100)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-ink-soft">
+                You&apos;ve captured about {Math.round(progressPct)}% of your full potential program so far.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <MiniHeroStat label="Already saving" value={`${formatSgd(alreadyMonthlySgd)}/mo (${(alreadyRatePct * 100).toFixed(0)}%)`} />
+                <MiniHeroStat
+                  label="Further available"
+                  value={`${formatSgdRange(result.monthlySavingSgdRange.low, result.monthlySavingSgdRange.high)}/mo (${(furtherRatePct * 100).toFixed(0)}%)`}
+                />
+                <MiniHeroStat
+                  label="Full program, once complete"
+                  value={`~${formatSgd(alreadyMonthlySgd + furtherMonthlyMid)}/mo (${(totalRatePct * 100).toFixed(0)}%)`}
+                />
+              </div>
+              <p className="mt-2 text-[10px] text-ink-soft">
+                &quot;Already saving&quot; is a modelled estimate against your current usage, not a measured before/after delta — see
+                the note in the In-depth tab. Rates are simple sums of two independently-modelled figures (already-implemented +
+                further-opportunity), so may run slightly high where a future measure shares an end-use with one you&apos;ve already
+                implemented.
+              </p>
+            </div>
+          );
+        })()}
 
+      {/* 2. Top 3 recommended ECMs — the "what do I buy" step, and the bridge into Schneider's product catalogue. */}
       {top3.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
           <h3 className="text-sm font-bold text-ink">Top {top3.length} ways to save further</h3>
@@ -129,22 +209,26 @@ export function ResultsHero({ companyName, result }: { companyName: string; resu
                 <span className="font-semibold text-ink">When to do it: </span>
                 {whenToDoEcm(active.costTier, active.certainty)}
               </p>
+              <p className="mt-1 text-xs text-ink-soft">
+                <span className="font-semibold text-ink">Delivered via: </span>
+                {activeProduct
+                  ? `${activeProduct.name} — ${activeProduct.covers}`
+                  : "Equipment/hardware upgrade — not a bundled Schneider digital product; pairs well with EcoStruxure Building Operation for ongoing control."}
+              </p>
+              {mode === "SME" && eeg && (
+                <p className="mt-2 rounded-md bg-brand-100/60 p-2 text-xs text-brand-800">
+                  🏛 The Singapore government will co-fund up to {((eeg.coFundRate ?? 0.7) * 100).toFixed(0)}% of this (Energy Efficiency
+                  Grant, up to S${(eeg.maxAmountSgd ?? 0).toLocaleString("en-SG")}) — but only through {eeg.validUntil}. Eligibility is
+                  case-by-case; not included in the figures above.
+                </p>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {result.alreadyImplementedEcm && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <h3 className="text-sm font-bold text-ink">You&apos;re already saving</h3>
-          <p className="mt-1 text-xs text-ink-soft">
-            Based on the {result.alreadyImplementedEcm.ids.length} measure(s) you told us are already in place or in progress, we estimate you&apos;re
-            capturing about <strong className="text-ink">{formatSgd(result.alreadyImplementedEcm.dollarSavedPerMonthMid)}/month</strong> in value
-            against your current usage. This is an estimate of ongoing value, not a measured historical saving — we don&apos;t know your
-            pre-implementation baseline.
-          </p>
-        </div>
-      )}
+      {/* 3. Cost of doing nothing vs. acting, over 10 years — the urgency argument, adjustable against whatever further measures the user is actually considering. */}
+      <ActionPlanChart result={result} />
 
       <div className="rounded-2xl border border-border bg-card p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Month to month, if you don&apos;t act vs. if you do</p>
