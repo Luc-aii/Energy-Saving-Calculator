@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import type { CalculationResult } from "@/lib/types/results";
 import { formatSgd, formatSgdRange, formatTonnes } from "@/lib/format";
 import { whoImplementsEcm, whenToDoEcm, productForEcm } from "@/lib/ecmGuidance";
-import { ActionPlanChart } from "./ActionPlanChart";
+import { ActionPlanChart, getActionPlanDefaults } from "./ActionPlanChart";
 import grantsData from "@data/grants.json";
 
 const CONFIDENCE_DOTS: Record<string, string> = {
@@ -20,6 +20,9 @@ const CONFIDENCE_DOTS: Record<string, string> = {
  * buy", (3) the cost-of-inaction chart — the urgency argument. The full per-measure % breakdown,
  * benchmark position, carbon picture, methodology and assumptions live in the In-depth tab below —
  * a first-time user doesn't need a 10-measure grouped breakdown before they've even seen the Top 3.
+ *
+ * The ECM tick-selection state lives here (not inside ActionPlanChart) so that headline figures,
+ * the banner, and the chart all stay in sync with whichever measures the user is considering.
  */
 export function ResultsHero({
   companyName,
@@ -40,6 +43,55 @@ export function ResultsHero({
   const activeProduct = active ? productForEcm(active.ecmId) : null;
   const eeg = grantsData.grants.find((g) => g.id === "eeg-base");
   const finalYearRow = result.yearRows[result.yearRows.length - 1];
+
+  // ---- Lifted ECM selection state (shared with ActionPlanChart and the banner) ----
+  const { candidates, top3Ids } = useMemo(() => getActionPlanDefaults(result), [result]);
+  // Identifies "which sector/candidate set is this" so a change resets ticks to that set's own Top 3.
+  const candidateKey = useMemo(() => candidates.map((c) => c.ecmId).sort().join("|"), [candidates]);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(top3Ids));
+  const [trackedKey, setTrackedKey] = useState(candidateKey);
+  if (candidateKey !== trackedKey) {
+    // Derived-state reset during render (React-sanctioned pattern): the candidate set changed, so
+    // re-seed the ticks to its Top 3 before this render is shown.
+    setTrackedKey(candidateKey);
+    setSelected(new Set(top3Ids));
+  }
+
+  /** Toggle a single ECM — used as the onToggle callback for ActionPlanChart. */
+  const handleToggle = useCallback((ecmId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(ecmId)) next.delete(ecmId);
+      else next.add(ecmId);
+      return next;
+    });
+  }, []);
+
+  // ---- Ticked-ECM-derived figures ----
+  // The full-set annual saving is the sum of every candidate's dollarSavedPerYearMid; the ticked
+  // subset's total gives us a fraction that scales the engine's headline figures proportionally.
+  // This keeps confidence ranges, tariff escalation, and all other engine math intact — we just
+  // narrow or widen the figures by the share of measures being considered.
+  const fullSetAnnualSgd = useMemo(
+    () => candidates.reduce((sum, c) => sum + c.dollarSavedPerYearMid, 0),
+    [candidates]
+  );
+  const tickedAnnualSgd = useMemo(
+    () => candidates.filter((c) => selected.has(c.ecmId)).reduce((sum, c) => sum + c.dollarSavedPerYearMid, 0),
+    [candidates, selected]
+  );
+  // Fraction of the full ECM set that's currently ticked (1.0 = all ticked, 0.0 = nothing ticked).
+  const tickedFraction = fullSetAnnualSgd > 0 ? tickedAnnualSgd / fullSetAnnualSgd : 1;
+
+  // Scale the engine's headline figures by the ticked fraction.
+  const scaledYear1Low = result.confidence.year1Range.low * tickedFraction;
+  const scaledYear1High = result.confidence.year1Range.high * tickedFraction;
+  const scaledMonthlyLow = result.monthlySavingSgdRange.low * tickedFraction;
+  const scaledMonthlyHigh = result.monthlySavingSgdRange.high * tickedFraction;
+  const scaled10YearLow = result.confidence.tenYearRange.low * tickedFraction;
+  const scaled10YearHigh = result.confidence.tenYearRange.high * tickedFraction;
+  const scaledMonthlySavingMid = result.monthlySavingSgdMid * tickedFraction;
+  const scaledMonthlyCo2e = result.monthlyCo2eAvoidedTonnesMid * tickedFraction;
 
   return (
     <div className="flex flex-col gap-4">
@@ -78,16 +130,16 @@ export function ResultsHero({
           <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">What you could save</p>
             <p className="mt-2 text-2xl font-bold text-ink">
-              {formatTonnes(result.monthlyCo2eAvoidedTonnesMid * 12)}
+              {formatTonnes(scaledMonthlyCo2e * 12)}
               <span className="text-sm font-medium text-ink-soft">/year</span>
             </p>
             <p className="text-xs text-ink-soft">
               CO2e avoided
               {result.totalScope12TCo2e > 0 &&
-                ` — about ${Math.round((result.monthlyCo2eAvoidedTonnesMid * 12 * 100) / result.totalScope12TCo2e)}% of what you have today`}
+                ` — about ${Math.round((scaledMonthlyCo2e * 12 * 100) / result.totalScope12TCo2e)}% of what you have today`}
             </p>
             <p className="mt-3 text-lg font-bold text-ink">
-              {formatSgdRange(result.confidence.year1Range.low, result.confidence.year1Range.high)}
+              {formatSgdRange(scaledYear1Low, scaledYear1High)}
             </p>
             <p className="text-xs text-ink-soft">energy cost saved in year 1, from the measures below</p>
           </div>
@@ -95,28 +147,25 @@ export function ResultsHero({
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <HeroStat label="Payback period" value={result.paybackYears ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"} big />
-          <HeroStat label="Monthly $ saved" value={formatSgdRange(result.monthlySavingSgdRange.low, result.monthlySavingSgdRange.high)} />
-          <HeroStat label="Monthly CO2e avoided" value={formatTonnes(result.monthlyCo2eAvoidedTonnesMid)} />
+          <HeroStat label="Monthly $ saved" value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)} />
+          <HeroStat label="Monthly CO2e avoided" value={formatTonnes(scaledMonthlyCo2e)} />
           <HeroStat
             label="10-year projected savings"
-            value={formatSgdRange(result.confidence.tenYearRange.low, result.confidence.tenYearRange.high)}
+            value={formatSgdRange(scaled10YearLow, scaled10YearHigh)}
           />
           <HeroStat label="Confidence" value={`${CONFIDENCE_DOTS[result.confidence.level]} ${result.confidence.level}`} />
           {result.computedPue !== null && <HeroStat label="Power Usage Effectiveness (PUE)" value={result.computedPue.toFixed(2)} />}
         </div>
 
-        {finalYearRow && (result.confidence.tenYearRange.high > 0 || result.confidence.tenYearRange.low > 0) && (
+        {finalYearRow && (scaled10YearHigh > 0 || scaled10YearLow > 0) && (
           <p className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs font-medium text-red-700">
-            Put another way: doing nothing costs you {formatSgdRange(result.confidence.tenYearRange.low, result.confidence.tenYearRange.high)} by{" "}
+            Put another way: doing nothing costs you {formatSgdRange(scaled10YearLow, scaled10YearHigh)} by{" "}
             {finalYearRow.calendarYear} — the same 10-year figure above, just given up instead of kept.
           </p>
         )}
       </div>
 
-      {/* 1.5. Combined already-captured + further-available — for a customer who's already implemented
-          something, "what am I saving" and "what more could I save" were previously two disconnected
-          cards the reader had to add up themselves. This ties them into one progress-to-full-potential
-          number, using the same rates/figures already shown elsewhere on the page (no new math). */}
+      {/* 1.5. Combined already-captured + further-available */}
       {result.alreadyImplementedEcm &&
         (() => {
           const alreadyRatePct = result.alreadyImplementedEcm.ratePctMid;
@@ -234,7 +283,7 @@ export function ResultsHero({
       )}
 
       {/* 3. Cost of doing nothing vs. acting, over 10 years — the urgency argument, adjustable against whatever further measures the user is actually considering. */}
-      <ActionPlanChart result={result} />
+      <ActionPlanChart result={result} selected={selected} onToggle={handleToggle} />
 
       <div className="rounded-2xl border border-border bg-card p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Month to month, if you don&apos;t act vs. if you do</p>
@@ -242,7 +291,7 @@ export function ResultsHero({
           <span className="font-bold text-ink">{formatSgd(result.monthlyCurrentEnergyCostSgd)}/month</span>
           <span className="text-ink-soft">recurring today →</span>
           <span className="font-bold text-brand-600">
-            {formatSgd(Math.max(result.monthlyCurrentEnergyCostSgd - result.monthlySavingSgdMid, 0))}/month
+            {formatSgd(Math.max(result.monthlyCurrentEnergyCostSgd - scaledMonthlySavingMid, 0))}/month
           </span>
           <span className="text-ink-soft">after acting, and it keeps rising if you don&apos;t.</span>
         </div>
@@ -251,6 +300,7 @@ export function ResultsHero({
   );
 }
 
+/** A single KPI stat in the headline grid. */
 function HeroStat({ label, value, big }: { label: string; value: string; big?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-card p-3">
@@ -260,6 +310,7 @@ function HeroStat({ label, value, big }: { label: string; value: string; big?: b
   );
 }
 
+/** A compact stat used inside ECM detail cards and the sustainability-program bar. */
 function MiniHeroStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -268,3 +319,4 @@ function MiniHeroStat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
