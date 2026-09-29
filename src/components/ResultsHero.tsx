@@ -67,31 +67,41 @@ export function ResultsHero({
     });
   }, []);
 
-  // ---- Ticked-ECM-derived figures ----
-  // The full-set annual saving is the sum of every candidate's dollarSavedPerYearMid; the ticked
-  // subset's total gives us a fraction that scales the engine's headline figures proportionally.
-  // This keeps confidence ranges, tariff escalation, and all other engine math intact — we just
-  // narrow or widen the figures by the share of measures being considered.
+  // ---- Selected-measures-derived figures ----
+  // The full-set annual saving is the sum of every candidate's dollarSavedPerYearMid; the selected
+  // subset's total gives us a fraction that scales the engine's headline dollar/CO2e figures
+  // proportionally. This keeps confidence ranges, tariff escalation, and all other engine math
+  // intact — we just narrow or widen the figures by the share of measures being considered.
   const fullSetAnnualSgd = useMemo(
     () => candidates.reduce((sum, c) => sum + c.dollarSavedPerYearMid, 0),
     [candidates]
   );
-  const tickedAnnualSgd = useMemo(
+  const selectedAnnualSgd = useMemo(
     () => candidates.filter((c) => selected.has(c.ecmId)).reduce((sum, c) => sum + c.dollarSavedPerYearMid, 0),
     [candidates, selected]
   );
-  // Fraction of the full ECM set that's currently ticked (1.0 = all ticked, 0.0 = nothing ticked).
-  const tickedFraction = fullSetAnnualSgd > 0 ? tickedAnnualSgd / fullSetAnnualSgd : 1;
+  // Fraction of the full ECM set currently selected (1.0 = everything, 0.0 = nothing).
+  const selectedFraction = fullSetAnnualSgd > 0 ? selectedAnnualSgd / fullSetAnnualSgd : 1;
 
-  // Scale the engine's headline figures by the ticked fraction.
-  const scaledYear1Low = result.confidence.year1Range.low * tickedFraction;
-  const scaledYear1High = result.confidence.year1Range.high * tickedFraction;
-  const scaledMonthlyLow = result.monthlySavingSgdRange.low * tickedFraction;
-  const scaledMonthlyHigh = result.monthlySavingSgdRange.high * tickedFraction;
-  const scaled10YearLow = result.confidence.tenYearRange.low * tickedFraction;
-  const scaled10YearHigh = result.confidence.tenYearRange.high * tickedFraction;
-  const scaledMonthlySavingMid = result.monthlySavingSgdMid * tickedFraction;
-  const scaledMonthlyCo2e = result.monthlyCo2eAvoidedTonnesMid * tickedFraction;
+  // Scale the engine's headline dollar/CO2e figures by the selected fraction.
+  const scaledYear1Low = result.confidence.year1Range.low * selectedFraction;
+  const scaledYear1High = result.confidence.year1Range.high * selectedFraction;
+  const scaledMonthlyLow = result.monthlySavingSgdRange.low * selectedFraction;
+  const scaledMonthlyHigh = result.monthlySavingSgdRange.high * selectedFraction;
+  const scaled10YearLow = result.confidence.tenYearRange.low * selectedFraction;
+  const scaled10YearHigh = result.confidence.tenYearRange.high * selectedFraction;
+  const scaledMonthlySavingMid = result.monthlySavingSgdMid * selectedFraction;
+  const scaledMonthlyCo2e = result.monthlyCo2eAvoidedTonnesMid * selectedFraction;
+
+  // Payback deliberately does NOT scale with selection. It's cost (your own typed investment
+  // figure) divided by saving — and unlike the dollar/CO2e figures above, there's no honest way to
+  // split "your $150,000 estimate" into "just these 3 measures' share" of it: that number isn't
+  // built from the catalog's per-measure cost tiers at all, it's whatever you typed for the whole
+  // program. Tried scaling it against the catalog's own cost-tier estimate for the selected
+  // measures instead of your typed figure — that produced payback periods LONGER than the full
+  // program's, for measures specifically ranked as the fastest-paying-back in the entire catalog,
+  // which is backwards and not defensible. So this tile intentionally always reflects the full
+  // program against your full typed investment — the caption says so explicitly.
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,7 +111,7 @@ export function ResultsHero({
         <h2 className="mt-1 text-xl font-bold text-ink">Save money. Lower cost. Improve efficiency.</h2>
         <p className="mt-1 text-sm text-ink-soft">
           What&apos;s possible for your Scope 1 + 2 footprint, based on your own numbers — not a generic percentage.
-          Figures below reflect your ticked measures and include projected tariff escalation and carbon tax savings. Tick or untick measures in the chart below to see how they affect these numbers.
+          Most figures below reflect whichever measures you select in the checklist below, and include projected tariff escalation and carbon tax savings. Check or uncheck measures there to see how they affect these numbers.
         </p>
 
         {result.criticalWarnings.length > 0 && (
@@ -142,20 +152,40 @@ export function ResultsHero({
             <p className="mt-3 text-lg font-bold text-ink">
               {formatSgdRange(scaledYear1Low, scaledYear1High)}
             </p>
-            <p className="text-xs text-ink-soft">energy cost saved in year 1, from your ticked measures</p>
+            <p className="text-xs text-ink-soft">energy cost saved in year 1, from the measures you&apos;ve selected below</p>
           </div>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <HeroStat label="Payback period" value={result.paybackYears ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"} big />
-          <HeroStat label="Monthly $ saved" value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)} />
-          <HeroStat label="Monthly CO2e avoided" value={formatTonnes(scaledMonthlyCo2e)} />
+          <HeroStat
+            label="Payback period"
+            value={result.paybackYears !== null ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"}
+            caption={`for your full ${formatSgd(result.netInvestmentSgd)} program estimate — doesn't change with your selection below`}
+            big
+          />
+          <HeroStat
+            label="Monthly $ saved"
+            value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)}
+            caption="further opportunity from what you've selected below — on top of what you already pay"
+          />
+          <HeroStat
+            label="Monthly CO2e avoided"
+            value={formatTonnes(scaledMonthlyCo2e)}
+            caption="from what you've selected below, vs. your current footprint"
+          />
           <HeroStat
             label="10-year projected savings"
             value={formatSgdRange(scaled10YearLow, scaled10YearHigh)}
+            caption="cumulative, from what you've selected below, incl. tariff escalation"
           />
-          <HeroStat label="Confidence" value={`${CONFIDENCE_DOTS[result.confidence.level]} ${result.confidence.level}`} />
-          {result.computedPue !== null && <HeroStat label="Power Usage Effectiveness (PUE)" value={result.computedPue.toFixed(2)} />}
+          <HeroStat
+            label="Confidence"
+            value={`${CONFIDENCE_DOTS[result.confidence.level]} ${result.confidence.level}`}
+            caption="how tight the ranges above are, based on your data quality"
+          />
+          {result.computedPue !== null && (
+            <HeroStat label="Power Usage Effectiveness (PUE)" value={result.computedPue.toFixed(2)} caption="total energy ÷ IT-load energy" />
+          )}
         </div>
 
         {finalYearRow && (scaled10YearHigh > 0 || scaled10YearLow > 0) && (
@@ -180,7 +210,9 @@ export function ResultsHero({
               <h3 className="text-sm font-bold text-ink">Your full sustainability program</h3>
               <p className="mt-1 text-xs text-ink-soft">
                 The {result.alreadyImplementedEcm.ids.length} measure(s) you&apos;ve already implemented, plus everything still
-                recommended further — combined into one progress-to-full-potential view.
+                recommended further — combined into one progress-to-full-potential view. This section always reflects your{" "}
+                <strong>entire</strong> measure catalog, unlike the figures above and the chart below, which only reflect
+                whatever you&apos;ve selected there.
               </p>
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
                 <div
@@ -284,7 +316,7 @@ export function ResultsHero({
       )}
 
       {/* 3. Cost of doing nothing vs. acting, over 10 years — the urgency argument, adjustable against whatever further measures the user is actually considering. */}
-      <ActionPlanChart result={result} selected={selected} onToggle={handleToggle} tickedFraction={tickedFraction} />
+      <ActionPlanChart result={result} selected={selected} onToggle={handleToggle} selectedFraction={selectedFraction} />
 
       <div className="rounded-2xl border border-border bg-card p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Month to month, if you don&apos;t act vs. if you do</p>
@@ -294,19 +326,23 @@ export function ResultsHero({
           <span className="font-bold text-brand-600">
             {formatSgd(Math.max(result.monthlyCurrentEnergyCostSgd - scaledMonthlySavingMid, 0))}/month
           </span>
-          <span className="text-ink-soft">after acting on your ticked measures, and it keeps rising if you don&apos;t.</span>
+          <span className="text-ink-soft">after acting on what you&apos;ve selected below, and it keeps rising if you don&apos;t.</span>
         </div>
       </div>
     </div>
   );
 }
 
-/** A single KPI stat in the headline grid. */
-function HeroStat({ label, value, big }: { label: string; value: string; big?: boolean }) {
+/** A single KPI stat in the headline grid. `caption` states what the number actually means/is relative
+ * to — these tiles are dense enough (a bare "8.3 yrs" or "S$406 – S$839") that without one, a reader
+ * has to guess whether it's total or incremental, against what baseline, and whether it moves with the
+ * checklist below. */
+function HeroStat({ label, value, caption, big }: { label: string; value: string; caption?: string; big?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <p className="text-[10px] uppercase tracking-wide text-ink-soft">{label}</p>
       <p className={`mt-0.5 font-bold text-ink ${big ? "text-2xl" : "text-base"}`}>{value}</p>
+      {caption && <p className="mt-0.5 text-[10px] text-ink-soft">{caption}</p>}
     </div>
   );
 }

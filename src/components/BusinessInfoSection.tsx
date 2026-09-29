@@ -92,7 +92,7 @@ export function BusinessInfoSection({
           <p className="text-sm font-medium text-ink">Already implemented or in progress</p>
           <p className="-mt-1.5 text-xs text-ink-soft">
             Select or type any measures you already have, or are actively rolling out — just what&apos;s in place, no recommendations here.
-            <strong className="font-semibold text-ink"> This directly changes your savings rate</strong>: each measure ticked here is removed
+            <strong className="font-semibold text-ink"> This directly changes your savings rate</strong>: each measure you select here is removed
             from the further-opportunity pool below, so your Top 3 and $ savings figures shift to reflect what&apos;s genuinely still available.
           </p>
           <EcmMultiSelect sector={inputs.universal.sector} selectedIds={inputs.baseline.implementedOrInProgressEcmIds} onToggle={toggleEcm} />

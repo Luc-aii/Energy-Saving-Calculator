@@ -21,7 +21,7 @@ export function getActionPlanDefaults(result: CalculationResult) {
  * "Do nothing" = the cumulative value of measures already implemented, on their own — the baseline
  * you keep either way. "Act now" = that same baseline plus the engine's year-by-year projection
  * (including tariff escalation and carbon tax) scaled by the share of further measures currently
- * ticked. This ensures the chart, headlines, and banner all show the same figures.
+ * selected. This ensures the chart, headlines, and banner all show the same figures.
  *
  * Selection state is lifted to the parent so every number on the page stays in sync.
  */
@@ -29,15 +29,15 @@ export function ActionPlanChart({
   result,
   selected,
   onToggle,
-  tickedFraction,
+  selectedFraction,
 }: {
   result: CalculationResult;
-  /** Currently ticked ECM IDs — owned by the parent. */
+  /** Currently selected (checked) ECM IDs — owned by the parent. */
   selected: Set<string>;
   /** Toggle callback — parent flips the set and re-renders both the chart and banner. */
   onToggle: (ecmId: string) => void;
-  /** Share of the full ECM set that's currently ticked (0–1). Drives the "Act now" line scaling. */
-  tickedFraction: number;
+  /** Share of the full ECM set currently selected (0–1). Drives the "Act now" line scaling. */
+  selectedFraction: number;
 }) {
   const candidates = useMemo(() => result.ecmResult?.breakdown ?? [], [result.ecmResult]);
   const top3Ids = useMemo(() => new Set(result.topEcmRecommendations.map((r) => r.ecmId)), [result.topEcmRecommendations]);
@@ -47,7 +47,7 @@ export function ActionPlanChart({
     [candidates, result.topEcmRecommendations]
   );
 
-  // Already-implemented baseline (flat, not escalated — this line stays constant regardless of ticks).
+  // Already-implemented baseline (flat, not escalated — this line stays constant regardless of selection).
   const baselineAnnualSgd = (result.alreadyImplementedEcm?.dollarSavedPerMonthMid ?? 0) * 12;
 
   // The engine combines measures multiplicatively (two 30% savings on the same end-use don't add to
@@ -60,17 +60,17 @@ export function ActionPlanChart({
   const labelAdjustment = flatSum > 0 ? engineYear1Total / flatSum : 1;
 
   // "Act now" uses the engine's year-by-year cumulative savings (incl. tariff escalation + carbon tax),
-  // scaled by tickedFraction so it reflects only the ticked measures.
+  // scaled by selectedFraction so it reflects only the currently-selected measures.
   const chartData = result.yearRows.map((row) => ({
     year: `Y${row.year}`,
     "Do nothing (already-implemented baseline)": Math.round(baselineAnnualSgd * row.year),
-    "Act now (baseline + your ticked measures)": Math.round(
-      baselineAnnualSgd * row.year + row.cumulativeSavingSgd * tickedFraction
+    "Act now (baseline + your selected measures)": Math.round(
+      baselineAnnualSgd * row.year + row.cumulativeSavingSgd * selectedFraction
     ),
   }));
 
-  // Y-axis ceiling fixed to "all measures ticked" (tickedFraction = 1) so the line's height
-  // only moves because you changed the ticks, never because the axis shrank with it.
+  // Y-axis ceiling fixed to "everything selected" (selectedFraction = 1) so the line's height
+  // only moves because you changed your selection, never because the axis shrank with it.
   const fullCumulative = result.yearRows.length > 0
     ? result.yearRows[result.yearRows.length - 1].cumulativeSavingSgd
     : 0;
@@ -97,7 +97,7 @@ export function ActionPlanChart({
       <h3 className="text-sm font-bold text-ink">Cost of doing nothing vs. acting, over 10 years</h3>
       <p className="mt-1 text-xs text-ink-soft">
         &quot;Do nothing&quot; is the cumulative value of what you&apos;ve already implemented, on its own. &quot;Act now&quot; adds
-        whatever further measures you tick below — including projected tariff escalation and carbon tax savings, matching
+        whatever further measures you select below — including projected tariff escalation and carbon tax savings, matching
         the headline figures above.
       </p>
 
@@ -120,7 +120,7 @@ export function ActionPlanChart({
             />
             <Line
               type="monotone"
-              dataKey="Act now (baseline + your ticked measures)"
+              dataKey="Act now (baseline + your selected measures)"
               stroke="#2563eb"
               strokeWidth={2}
               dot={false}
@@ -133,7 +133,7 @@ export function ActionPlanChart({
       {candidates.length > 0 && (
         <details className="mt-3 rounded-lg border border-border bg-white p-2.5" open>
           <summary className="cursor-pointer text-xs font-bold text-ink">
-            Which further measures are you considering? ({selected.size} of {candidates.length} ticked)
+            Which further measures are you considering? ({selected.size} of {candidates.length} selected)
           </summary>
           <div className="mt-2 flex flex-col gap-1.5">
             {sortedCandidates.map((c) => (
