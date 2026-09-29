@@ -50,6 +50,15 @@ export function ActionPlanChart({
   // Already-implemented baseline (flat, not escalated — this line stays constant regardless of ticks).
   const baselineAnnualSgd = (result.alreadyImplementedEcm?.dollarSavedPerMonthMid ?? 0) * 12;
 
+  // The engine combines measures multiplicatively (two 30% savings on the same end-use don't add to
+  // 60%, they combine to 51%). It also includes carbon tax savings and tariff escalation. So the sum
+  // of each ECM's individual dollarSavedPerYearMid won't match the engine total. This adjustment
+  // factor scales each per-ECM label so they add up to the engine's actual year-1 value — keeping
+  // the checkbox labels and the headline figures perfectly in sync.
+  const flatSum = useMemo(() => candidates.reduce((s, c) => s + c.dollarSavedPerYearMid, 0), [candidates]);
+  const engineYear1Total = result.yearRows.length > 0 ? result.yearRows[0].totalSavingSgd : 0;
+  const labelAdjustment = flatSum > 0 ? engineYear1Total / flatSum : 1;
+
   // "Act now" uses the engine's year-by-year cumulative savings (incl. tariff escalation + carbon tax),
   // scaled by tickedFraction so it reflects only the ticked measures.
   const chartData = result.yearRows.map((row) => ({
@@ -143,7 +152,7 @@ export function ActionPlanChart({
                     #{rankByEcmId.get(c.ecmId)} recommended
                   </span>
                 )}
-                <span className="w-16 shrink-0 text-right font-medium text-ink">{formatSgd(c.dollarSavedPerYearMid)}/yr</span>
+                <span className="w-16 shrink-0 text-right font-medium text-ink">{formatSgd(c.dollarSavedPerYearMid * labelAdjustment)}/yr</span>
               </label>
             ))}
           </div>
