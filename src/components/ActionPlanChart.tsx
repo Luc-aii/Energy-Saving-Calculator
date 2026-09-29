@@ -87,8 +87,8 @@ export function ActionPlanChart({
       <h3 className="text-sm font-bold text-ink">Cost of doing nothing vs. acting, over 10 years</h3>
       <p className="mt-1 text-xs text-ink-soft">
         &quot;Do nothing&quot; is the cumulative value of what you&apos;ve already implemented, on its own. &quot;Act now&quot; adds
-        whatever further measures you tick below — a simplified estimate for exploring options. The &quot;month-to-month&quot; banner
-        below updates to match your ticked selection.
+        whatever further measures you tick below — a simplified sum of each measure&apos;s energy saving only (no tariff escalation
+        or carbon tax). The headline figures and banner above include those adjustments, so they&apos;ll be slightly higher.
       </p>
 
       <div className="mt-2 h-64">

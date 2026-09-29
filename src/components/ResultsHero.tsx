@@ -101,6 +101,7 @@ export function ResultsHero({
         <h2 className="mt-1 text-xl font-bold text-ink">Save money. Lower cost. Improve efficiency.</h2>
         <p className="mt-1 text-sm text-ink-soft">
           What&apos;s possible for your Scope 1 + 2 footprint, based on your own numbers — not a generic percentage.
+          Figures below reflect your ticked measures and include projected tariff escalation and carbon tax savings.
         </p>
 
         {result.criticalWarnings.length > 0 && (
@@ -141,13 +142,13 @@ export function ResultsHero({
             <p className="mt-3 text-lg font-bold text-ink">
               {formatSgdRange(scaledYear1Low, scaledYear1High)}
             </p>
-            <p className="text-xs text-ink-soft">energy cost saved in year 1, from the measures below</p>
+            <p className="text-xs text-ink-soft">energy cost saved in year 1 (incl. tariff escalation + carbon tax), from your ticked measures</p>
           </div>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <HeroStat label="Payback period" value={result.paybackYears ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"} big />
-          <HeroStat label="Monthly $ saved" value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)} />
+          <HeroStat label="Monthly $ saved (incl. escalation)" value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)} />
           <HeroStat label="Monthly CO2e avoided" value={formatTonnes(scaledMonthlyCo2e)} />
           <HeroStat
             label="10-year projected savings"
@@ -293,8 +294,13 @@ export function ResultsHero({
           <span className="font-bold text-brand-600">
             {formatSgd(Math.max(result.monthlyCurrentEnergyCostSgd - scaledMonthlySavingMid, 0))}/month
           </span>
-          <span className="text-ink-soft">after acting, and it keeps rising if you don&apos;t.</span>
+          <span className="text-ink-soft">after acting on your ticked measures, and it keeps rising if you don&apos;t.</span>
         </div>
+        <p className="mt-1.5 text-[10px] text-ink-soft">
+          This figure includes projected tariff escalation and carbon tax savings from the full engine model.
+          The chart above uses a simplified per-measure sum (energy cost only, no escalation) for quick comparison —
+          the two approaches will differ slightly.
+        </p>
       </div>
     </div>
   );
