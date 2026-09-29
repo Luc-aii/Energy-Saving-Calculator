@@ -6,32 +6,6 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   );
 }
 
-export function KpiStat({
-  icon,
-  label,
-  value,
-  caption,
-  tone = "default",
-}: {
-  icon?: ReactNode;
-  label: string;
-  value: string;
-  caption?: string;
-  tone?: "default" | "brand" | "warn";
-}) {
-  const valueColor = tone === "brand" ? "text-brand-600" : tone === "warn" ? "text-accent-amber" : "text-ink";
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="flex items-center gap-1.5 text-xs font-medium text-ink-soft">
-        {icon}
-        {label}
-      </span>
-      <span key={value} className={`animate-value-update break-words rounded text-xl font-bold sm:text-2xl ${valueColor}`}>{value}</span>
-      {caption && <span className="text-xs text-ink-soft">{caption}</span>}
-    </div>
-  );
-}
-
 export function PrimaryButton({
   children,
   onClick,

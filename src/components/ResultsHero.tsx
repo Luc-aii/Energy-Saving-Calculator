@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import type { CalculationResult } from "@/lib/types/results";
-import { formatSgd, formatSgdRange, formatTonnes } from "@/lib/format";
+import { formatSgd, formatTonnes } from "@/lib/format";
 import { whoImplementsEcm, whenToDoEcm, productForEcm } from "@/lib/ecmGuidance";
 import { ActionPlanChart, getActionPlanDefaults } from "./ActionPlanChart";
 import grantsData from "@data/grants.json";
@@ -21,7 +21,7 @@ const CONFIDENCE_DOTS: Record<string, string> = {
  * benchmark position, carbon picture, methodology and assumptions live in the In-depth tab below —
  * a first-time user doesn't need a 10-measure grouped breakdown before they've even seen the Top 3.
  *
- * The ECM tick-selection state lives here (not inside ActionPlanChart) so that headline figures,
+ * The ECM selection state lives here (not inside ActionPlanChart) so that headline figures,
  * the banner, and the chart all stay in sync with whichever measures the user is considering.
  */
 export function ResultsHero({
@@ -35,6 +35,12 @@ export function ResultsHero({
   mode?: "SME" | "MNC";
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
+  // Every range on this card shows its single mid-point estimate, not the low–high band — a clean
+  // "here's the number" reads more clearly than a range here, and offering both (a toggle) turned
+  // out to just add a second thing to figure out. A range's mid-point is always exactly
+  // (low + high) / 2 by construction (each range is built as total * (1 ∓ w)), so this needs no
+  // separate "mid" field per figure. The low–high band is still shown in the In-depth tab.
+  const fmtMid = (low: number, high: number) => formatSgd((low + high) / 2);
   const top3 = result.topEcmRecommendations;
   // Dense-ranked: a tie on payback means two measures can both carry rank 3, so this can hold more
   // than 3 items. topRankCount is the true "Top N" to show in copy — array length isn't, once tied.
@@ -150,7 +156,7 @@ export function ResultsHero({
                 ` — about ${Math.round((scaledMonthlyCo2e * 12 * 100) / result.totalScope12TCo2e)}% of what you have today`}
             </p>
             <p className="mt-3 text-lg font-bold text-ink">
-              {formatSgdRange(scaledYear1Low, scaledYear1High)}
+              {fmtMid(scaledYear1Low, scaledYear1High)}
             </p>
             <p className="text-xs text-ink-soft">energy cost saved in year 1, from the measures you&apos;ve selected below</p>
           </div>
@@ -165,7 +171,7 @@ export function ResultsHero({
           />
           <HeroStat
             label="Monthly $ saved"
-            value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)}
+            value={fmtMid(scaledMonthlyLow, scaledMonthlyHigh)}
             caption="further opportunity from what you've selected below — on top of what you already pay"
           />
           <HeroStat
@@ -175,7 +181,7 @@ export function ResultsHero({
           />
           <HeroStat
             label="10-year projected savings"
-            value={formatSgdRange(scaled10YearLow, scaled10YearHigh)}
+            value={fmtMid(scaled10YearLow, scaled10YearHigh)}
             caption="cumulative, from what you've selected below, incl. tariff escalation"
           />
           <HeroStat
@@ -190,7 +196,7 @@ export function ResultsHero({
 
         {finalYearRow && (scaled10YearHigh > 0 || scaled10YearLow > 0) && (
           <p className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs font-medium text-red-700">
-            Put another way: doing nothing costs you {formatSgdRange(scaled10YearLow, scaled10YearHigh)} by{" "}
+            Put another way: doing nothing costs you {fmtMid(scaled10YearLow, scaled10YearHigh)} by{" "}
             {finalYearRow.calendarYear} — the same 10-year figure above, just given up instead of kept.
           </p>
         )}
@@ -227,11 +233,11 @@ export function ResultsHero({
                 <MiniHeroStat label="Already saving" value={`${formatSgd(alreadyMonthlySgd)}/mo (${(alreadyRatePct * 100).toFixed(0)}%)`} />
                 <MiniHeroStat
                   label="Further available"
-                  value={`${formatSgdRange(result.monthlySavingSgdRange.low, result.monthlySavingSgdRange.high)}/mo (${(furtherRatePct * 100).toFixed(0)}%)`}
+                  value={`${fmtMid(result.monthlySavingSgdRange.low, result.monthlySavingSgdRange.high)}/mo (${(furtherRatePct * 100).toFixed(0)}%)`}
                 />
                 <MiniHeroStat
                   label="Full program, once complete"
-                  value={`~${formatSgd(alreadyMonthlySgd + furtherMonthlyMid)}/mo (${(totalRatePct * 100).toFixed(0)}%)`}
+                  value={`${formatSgd(alreadyMonthlySgd + furtherMonthlyMid)}/mo (${(totalRatePct * 100).toFixed(0)}%)`}
                 />
               </div>
               <p className="mt-2 text-[10px] text-ink-soft">
@@ -334,8 +340,8 @@ export function ResultsHero({
 }
 
 /** A single KPI stat in the headline grid. `caption` states what the number actually means/is relative
- * to — these tiles are dense enough (a bare "8.3 yrs" or "S$406 – S$839") that without one, a reader
- * has to guess whether it's total or incremental, against what baseline, and whether it moves with the
+ * to — these tiles are dense enough (a bare "8.3 yrs" or "S$623") that without one, a reader has to
+ * guess whether it's total or incremental, against what baseline, and whether it moves with the
  * checklist below. */
 function HeroStat({ label, value, caption, big }: { label: string; value: string; caption?: string; big?: boolean }) {
   return (

@@ -6,7 +6,6 @@ import type { Dispatch, SetStateAction } from "react";
 import type { CalculationResult, ScenarioSummary } from "@/lib/types/results";
 import type { MncInputs } from "@/lib/types/mncInputs";
 import { MncInputForm, MNC_INPUT_STEPS } from "./MncInputForm";
-import { LiveKpiStrip } from "./LiveKpiStrip";
 import { SampleDataBanner } from "./SampleDataBanner";
 import { HowToUse } from "./HowToUse";
 import { Stepper } from "./ui/Stepper";
@@ -48,8 +47,6 @@ export function MncWizard({
       </div>
 
       {showSampleBanner && !isResultsStep && <SampleDataBanner onClear={onClearSample} />}
-
-      {!isResultsStep && <LiveKpiStrip companyName={inputs.companyName} result={result} />}
 
       {isResultsStep ? (
         <ResultsPanel
