@@ -6,8 +6,6 @@ import type { CalculationResult } from "@/lib/types/results";
 import { formatSgd } from "@/lib/format";
 import { sortEcmBreakdownForDisplay } from "@/lib/calc/ecm";
 
-const PROJECTION_YEARS = 10;
-
 /**
  * Returns the sorted candidate ECM list and the default selected set (top-3 recommended IDs)
  * for a given result — used by the parent to initialise the lifted selection state.
@@ -21,24 +19,25 @@ export function getActionPlanDefaults(result: CalculationResult) {
 
 /**
  * "Do nothing" = the cumulative value of measures already implemented, on their own — the baseline
- * you keep either way. "Act now" = that same baseline plus whatever further measures are ticked in
- * the checklist below, defaulting to the Top 3 recommended. This is a self-contained sandbox for
- * exploring options: it sums each ticked measure's own dollarSavedPerYearMid (no tariff escalation,
- * no re-running the full multiplicative end-use combination), so it's a simplified estimate.
+ * you keep either way. "Act now" = that same baseline plus the engine's year-by-year projection
+ * (including tariff escalation and carbon tax) scaled by the share of further measures currently
+ * ticked. This ensures the chart, headlines, and banner all show the same figures.
  *
- * Selection state is lifted to the parent so the "month-to-month" banner can reflect the same set
- * of ticked measures — what you tick here directly updates "after acting" below.
+ * Selection state is lifted to the parent so every number on the page stays in sync.
  */
 export function ActionPlanChart({
   result,
   selected,
   onToggle,
+  tickedFraction,
 }: {
   result: CalculationResult;
   /** Currently ticked ECM IDs — owned by the parent. */
   selected: Set<string>;
   /** Toggle callback — parent flips the set and re-renders both the chart and banner. */
   onToggle: (ecmId: string) => void;
+  /** Share of the full ECM set that's currently ticked (0–1). Drives the "Act now" line scaling. */
+  tickedFraction: number;
 }) {
   const candidates = useMemo(() => result.ecmResult?.breakdown ?? [], [result.ecmResult]);
   const top3Ids = useMemo(() => new Set(result.topEcmRecommendations.map((r) => r.ecmId)), [result.topEcmRecommendations]);
@@ -48,26 +47,28 @@ export function ActionPlanChart({
     [candidates, result.topEcmRecommendations]
   );
 
+  // Already-implemented baseline (flat, not escalated — this line stays constant regardless of ticks).
   const baselineAnnualSgd = (result.alreadyImplementedEcm?.dollarSavedPerMonthMid ?? 0) * 12;
-  const additionalAnnualSgd = candidates
-    .filter((c) => selected.has(c.ecmId))
-    .reduce((sum, c) => sum + c.dollarSavedPerYearMid, 0);
 
-  const chartData = Array.from({ length: PROJECTION_YEARS }, (_, i) => {
-    const year = i + 1;
-    return {
-      year: `Y${year}`,
-      "Do nothing (already-implemented baseline)": Math.round(baselineAnnualSgd * year),
-      "Act now (baseline + your ticked measures)": Math.round((baselineAnnualSgd + additionalAnnualSgd) * year),
-    };
-  });
+  // "Act now" uses the engine's year-by-year cumulative savings (incl. tariff escalation + carbon tax),
+  // scaled by tickedFraction so it reflects only the ticked measures.
+  const chartData = result.yearRows.map((row) => ({
+    year: `Y${row.year}`,
+    "Do nothing (already-implemented baseline)": Math.round(baselineAnnualSgd * row.year),
+    "Act now (baseline + your ticked measures)": Math.round(
+      baselineAnnualSgd * row.year + row.cumulativeSavingSgd * tickedFraction
+    ),
+  }));
 
-  // Fixed against the FULL candidate set (every measure, ticked or not), not just what's currently
-  // ticked — otherwise unticking a measure shrinks "auto"'s own ceiling along with the line.
-  const maxPossibleAnnualSgd = baselineAnnualSgd + candidates.reduce((sum, c) => sum + c.dollarSavedPerYearMid, 0);
+  // Y-axis ceiling fixed to "all measures ticked" (tickedFraction = 1) so the line's height
+  // only moves because you changed the ticks, never because the axis shrank with it.
+  const fullCumulative = result.yearRows.length > 0
+    ? result.yearRows[result.yearRows.length - 1].cumulativeSavingSgd
+    : 0;
+  const maxPossibleCumulative = baselineAnnualSgd * result.yearRows.length + fullCumulative;
 
-  // Both lines are genuinely $0 — nothing to chart.
-  if (maxPossibleAnnualSgd <= 0) {
+  // Nothing to chart — sector has no ECM data.
+  if (maxPossibleCumulative <= 0) {
     return (
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
         <h3 className="text-sm font-bold text-ink">Cost of doing nothing vs. acting, over 10 years</h3>
@@ -80,15 +81,15 @@ export function ActionPlanChart({
     );
   }
 
-  const yDomainMax = Math.max(1, Math.ceil((maxPossibleAnnualSgd * PROJECTION_YEARS * 1.05) / 1000) * 1000);
+  const yDomainMax = Math.max(1, Math.ceil((maxPossibleCumulative * 1.05) / 1000) * 1000);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-brand-700/5">
       <h3 className="text-sm font-bold text-ink">Cost of doing nothing vs. acting, over 10 years</h3>
       <p className="mt-1 text-xs text-ink-soft">
         &quot;Do nothing&quot; is the cumulative value of what you&apos;ve already implemented, on its own. &quot;Act now&quot; adds
-        whatever further measures you tick below — a simplified sum of each measure&apos;s energy saving only (no tariff escalation
-        or carbon tax). The headline figures and banner above include those adjustments, so they&apos;ll be slightly higher.
+        whatever further measures you tick below — including projected tariff escalation and carbon tax savings, matching
+        the headline figures above.
       </p>
 
       <div className="mt-2 h-64">
@@ -151,4 +152,3 @@ export function ActionPlanChart({
     </div>
   );
 }
-

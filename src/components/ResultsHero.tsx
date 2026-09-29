@@ -101,7 +101,7 @@ export function ResultsHero({
         <h2 className="mt-1 text-xl font-bold text-ink">Save money. Lower cost. Improve efficiency.</h2>
         <p className="mt-1 text-sm text-ink-soft">
           What&apos;s possible for your Scope 1 + 2 footprint, based on your own numbers — not a generic percentage.
-          Figures below reflect your ticked measures and include projected tariff escalation and carbon tax savings.
+          Figures below reflect your ticked measures and include projected tariff escalation and carbon tax savings. Tick or untick measures in the chart below to see how they affect these numbers.
         </p>
 
         {result.criticalWarnings.length > 0 && (
@@ -142,13 +142,13 @@ export function ResultsHero({
             <p className="mt-3 text-lg font-bold text-ink">
               {formatSgdRange(scaledYear1Low, scaledYear1High)}
             </p>
-            <p className="text-xs text-ink-soft">energy cost saved in year 1 (incl. tariff escalation + carbon tax), from your ticked measures</p>
+            <p className="text-xs text-ink-soft">energy cost saved in year 1, from your ticked measures</p>
           </div>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <HeroStat label="Payback period" value={result.paybackYears ? `${result.paybackYears.toFixed(1)} yrs` : "Beyond 10 yrs"} big />
-          <HeroStat label="Monthly $ saved (incl. escalation)" value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)} />
+          <HeroStat label="Monthly $ saved" value={formatSgdRange(scaledMonthlyLow, scaledMonthlyHigh)} />
           <HeroStat label="Monthly CO2e avoided" value={formatTonnes(scaledMonthlyCo2e)} />
           <HeroStat
             label="10-year projected savings"
@@ -284,7 +284,7 @@ export function ResultsHero({
       )}
 
       {/* 3. Cost of doing nothing vs. acting, over 10 years — the urgency argument, adjustable against whatever further measures the user is actually considering. */}
-      <ActionPlanChart result={result} selected={selected} onToggle={handleToggle} />
+      <ActionPlanChart result={result} selected={selected} onToggle={handleToggle} tickedFraction={tickedFraction} />
 
       <div className="rounded-2xl border border-border bg-card p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Month to month, if you don&apos;t act vs. if you do</p>
@@ -296,11 +296,6 @@ export function ResultsHero({
           </span>
           <span className="text-ink-soft">after acting on your ticked measures, and it keeps rising if you don&apos;t.</span>
         </div>
-        <p className="mt-1.5 text-[10px] text-ink-soft">
-          This figure includes projected tariff escalation and carbon tax savings from the full engine model.
-          The chart above uses a simplified per-measure sum (energy cost only, no escalation) for quick comparison —
-          the two approaches will differ slightly.
-        </p>
       </div>
     </div>
   );
