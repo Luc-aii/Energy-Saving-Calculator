@@ -242,7 +242,7 @@ export function ResultsHero({
           <span className="font-bold text-ink">{formatSgd(result.monthlyCurrentEnergyCostSgd)}/month</span>
           <span className="text-ink-soft">recurring today →</span>
           <span className="font-bold text-brand-600">
-            {formatSgd(Math.max(result.monthlyCurrentEnergyCostSgd - result.monthlySavingSgdRange.low, 0))}/month
+            {formatSgd(Math.max(result.monthlyCurrentEnergyCostSgd - result.monthlySavingSgdMid, 0))}/month
           </span>
           <span className="text-ink-soft">after acting, and it keeps rising if you don&apos;t.</span>
         </div>

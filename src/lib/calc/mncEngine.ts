@@ -455,6 +455,7 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
     topEcmRecommendations,
     alreadyImplementedEcm,
     monthlySavingSgdRange: { low: year1Total * (1 - w) / 12, high: year1Total * (1 + w) / 12 },
+    monthlySavingSgdMid: year1Total / 12,
     monthlyCo2eAvoidedTonnesMid: yearRows[0].carbonAvoidedTCo2e / 12,
     monthlyCurrentEnergyCostSgd: currentAnnualCarbonCostSgd / 12,
   };

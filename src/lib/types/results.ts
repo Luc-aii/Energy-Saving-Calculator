@@ -224,6 +224,8 @@ export interface CalculationResult {
   alreadyImplementedEcm: AlreadyImplementedEcmSummary | null;
   /** Monthly framing of the headline figures — computed once here (not derived ad hoc in the UI) so they stay consistent with the confidence ranges below. */
   monthlySavingSgdRange: { low: number; high: number };
+  /** Base (mid-point) monthly saving — the confidence-range centre before the ±w width is applied. Use this as the default "after acting" figure unless the user has explicitly chosen conservative/optimistic. */
+  monthlySavingSgdMid: number;
   monthlyCo2eAvoidedTonnesMid: number;
   monthlyCurrentEnergyCostSgd: number;
 }
