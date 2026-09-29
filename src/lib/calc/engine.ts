@@ -24,7 +24,7 @@ import {
   rankRemainingEcms,
   computeAlreadyImplementedValue,
 } from "./ecm";
-import { nonNeg, buildFinalPositionLabel, savingsRateSanityWarnings, fastPaybackWarning } from "./sharedEngineHelpers";
+import { nonNeg, buildFinalPositionLabel, savingsRateSanityWarnings, fastPaybackWarning, applySavingsRateDelta } from "./sharedEngineHelpers";
 
 const PROJECTION_YEARS = 10;
 const GEF_BASE = emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh;
@@ -277,7 +277,8 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   const alreadyImplementedEcm = computeAlreadyImplementedValue(energyEndUseBreakdown, implementedIds, netAnnualElectricityKwh, tariff);
   const topEcmRecommendations = rankRemainingEcms(inputs.universal.sector, energyEndUseBreakdown, implementedIds, netAnnualElectricityKwh, tariff);
 
-  const savingRatePct = inputs.sensitivity.savingsRateOverridePct ?? ecmResult?.ratePctMid ?? computedRate;
+  const rawSavingRate = inputs.sensitivity.savingsRateOverridePct ?? ecmResult?.ratePctMid ?? computedRate;
+  const savingRatePct = applySavingsRateDelta(rawSavingRate, inputs.carbonPriceScenario, !!inputs.sensitivity.savingsRateOverridePct);
 
   // The sector-position label (e.g. "worst quartile") describes where the calibration curve places this
   // business — but when an ECM-derived or manual rate is actually used, showing that label next to a
@@ -421,6 +422,7 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   });
 
   const result: CalculationResult = {
+    carbonPriceScenario: inputs.carbonPriceScenario,
     baselineScope1TCo2e,
     baselineScope2TCo2e,
     baselineScope3TCo2e,

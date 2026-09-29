@@ -50,7 +50,7 @@ export default function Home() {
       <header className="no-print sticky top-0 z-20 border-b border-border bg-card/80 px-4 py-4 backdrop-blur-md sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-y-2">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-ink">EcoStruxure Value Advisor</h1>
+            <h1 className="text-xl font-bold text-ink">PRISM</h1>
             <p className="text-sm text-ink-soft">Schneider Electric Emissions-to-Dollar Calculator — Singapore</p>
           </div>
           <div className="flex overflow-hidden rounded-full border border-border text-sm">

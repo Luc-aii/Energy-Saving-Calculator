@@ -72,7 +72,7 @@ export function MncSitesSection({ inputs, patchers }: { inputs: MncInputs; patch
               <FieldRow label="Monthly electricity (kWh)" required>
                 <NumberInput className={inputClass} value={site.monthlyElectricityKwh} onChange={(n) => patchSite(site.id, "monthlyElectricityKwh", n)} />
               </FieldRow>
-              <FieldRow label="Renewable coverage (%)" hint="RECs/PPA/green tariff for this site. Splits its cost into a clean share (priced with a premium) and dirty share, and lowers the CO2e-avoided figure this site's savings measures can claim, since already-clean kWh can't avoid further emissions. Also triggers the Microgrid/EaaS product recommendation.">
+              <FieldRow label="Renewable coverage (%)" hint="RECs/PPA/green tariff for this site. Splits its cost into a clean share (priced with a premium) and dirty share, and lowers the CO2e-avoided figure this site's savings measures can claim, since already-clean kWh can't avoid further emissions. Also surfaces onsite generation / backup-power measures for this site.">
                 <NumberInput min={0} max={100} className={inputClass} value={site.renewableCoveragePct} onChange={(n) => patchSite(site.id, "renewableCoveragePct", Math.min(n, 100))} />
               </FieldRow>
               <FieldRow label="Floor area (m²)" hint="Feeds this site's energy-intensity benchmark. If this site's kWh is left blank, it also becomes the basis for estimating that site's electricity use — and therefore its $ savings, payback and CO2e.">

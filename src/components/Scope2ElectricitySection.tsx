@@ -65,7 +65,7 @@ export function Scope2ElectricitySection({
             />
           </FieldRow>
         )}
-        <FieldRow label="Onsite solar generation?" hint="Also recommends the Microgrid/EaaS product below if yes">
+        <FieldRow label="Onsite solar generation?" hint="Also surfaces onsite generation / backup-power measures below if yes">
           <select
             className={inputClass}
             value={inputs.energy.hasSolar ? "yes" : "no"}
@@ -143,18 +143,63 @@ export function Scope2ElectricitySection({
           {!showEndUseCustomizer && <EnergyEndUseChart items={endUseBreakdown} />}
           {showEndUseCustomizer && (
             <div className="flex flex-col gap-2">
-              {endUseBreakdown.map((item) => (
-                <FieldRow key={item.id} label={item.label}>
-                  <NumberInput
-                    min={0}
-                    max={100}
-                    className={inputClass}
-                    value={Math.round(item.pct)}
-                    onChange={(n) => patchEndUsePct(item.id, Math.min(n, 100))}
-                  />
-                </FieldRow>
-              ))}
-              <p className="text-[10px] text-ink-soft">Normalized to 100% automatically, even if your entries don&apos;t add up exactly.</p>
+              {(() => {
+                /* Show raw user values — not the normalized ones — so the inputs don't shift under
+                 * your fingers while you're typing. The engine normalizes internally regardless,
+                 * so calculation accuracy is unaffected. */
+                const raw = inputs.energy.customEndUsePct ?? {};
+                const rawTotal = Object.values(raw).reduce((s, v) => s + Math.max(v, 0), 0);
+                const isExact = Math.abs(rawTotal - 100) < 0.5;
+
+                return (
+                  <>
+                    {endUseBreakdown.map((item) => (
+                      <FieldRow key={item.id} label={item.label}>
+                        <NumberInput
+                          min={0}
+                          max={100}
+                          className={inputClass}
+                          value={raw[item.id] != null ? Math.round(raw[item.id]) : Math.round(item.pct)}
+                          onChange={(n) => patchEndUsePct(item.id, Math.min(n, 100))}
+                        />
+                      </FieldRow>
+                    ))}
+
+                    {/* Running total + normalize button */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-ink-soft">
+                        Total:{" "}
+                        <span className={isExact ? "font-semibold text-green-600" : "font-semibold text-amber-600"}>
+                          {Math.round(rawTotal)}%
+                        </span>
+                        {!isExact && " — the engine normalizes this for calculations, but you can tidy it up below."}
+                      </p>
+                      {!isExact && (
+                        <button
+                          type="button"
+                          className="ml-2 whitespace-nowrap rounded bg-brand-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
+                          onClick={() => {
+                            /* Scale every raw value so the total becomes exactly 100. */
+                            if (rawTotal <= 0) return;
+                            const normalized = Object.fromEntries(
+                              Object.entries(raw).map(([id, v]) => [id, Math.round((Math.max(v, 0) / rawTotal) * 100)])
+                            );
+                            /* Adjust rounding residual on the largest bucket so it sums to exactly 100. */
+                            const normSum = Object.values(normalized).reduce((s, v) => s + v, 0);
+                            if (normSum !== 100) {
+                              const largestId = Object.entries(normalized).sort((a, b) => b[1] - a[1])[0]?.[0];
+                              if (largestId) normalized[largestId] += 100 - normSum;
+                            }
+                            patchEnergy("customEndUsePct", normalized);
+                          }}
+                        >
+                          Normalize to 100%
+                        </button>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>

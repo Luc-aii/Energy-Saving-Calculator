@@ -13,15 +13,15 @@ export function MncFuelFleetSection({ inputs, patchers }: { inputs: MncInputs; p
   return (
     <SectionCard
       title="Scope 1 — Fuel & Fleet"
-      subtitle="These feed your Scope 1 emissions total and regulatory-exposure check — they don't move your $ savings or payback unless your direct emissions are large enough to be carbon-tax-liable. Two exceptions below trigger a product recommendation."
+      subtitle="These feed your Scope 1 emissions total and regulatory-exposure check — they don't move your $ savings or payback unless your direct emissions are large enough to be carbon-tax-liable. Two exceptions below surface further measure recommendations."
     >
-      <FieldRow label="Stationary diesel (litres/year)" hint="Also triggers the Microgrid/EaaS product recommendation if set. Generators, boilers — optional, leave blank if none group-wide.">
+      <FieldRow label="Stationary diesel (litres/year)" hint="Also surfaces onsite generation / backup-power measures if set. Generators, boilers — optional, leave blank if none group-wide.">
         <input type="number" className={inputClass} value={inputs.fuelFleet.stationaryDieselLitresPerYear ?? ""} onChange={(e) => patchFuel("stationaryDieselLitresPerYear", numOrUndef(e.target.value))} />
       </FieldRow>
       <FieldRow label="Mobile fleet diesel (litres/year)" hint="Optional — leave blank if no diesel company vehicles">
         <input type="number" className={inputClass} value={inputs.fuelFleet.mobileDieselLitresPerYear ?? ""} onChange={(e) => patchFuel("mobileDieselLitresPerYear", numOrUndef(e.target.value))} />
       </FieldRow>
-      <FieldRow label="Manufacturing facility?" hint="Also triggers the PowerLogic product recommendation (power quality/distribution) if yes.">
+      <FieldRow label="Manufacturing facility?" hint="Also surfaces power-quality / distribution measures if yes.">
         <select className={inputClass} value={inputs.fuelFleet.isManufacturing ? "yes" : "no"} onChange={(e) => patchFuel("isManufacturing", e.target.value === "yes")}>
           <option value="no">No</option>
           <option value="yes">Yes</option>

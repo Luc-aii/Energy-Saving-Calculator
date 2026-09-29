@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import type { CalculationResult } from "@/lib/types/results";
 import { formatSgd, formatTonnes } from "@/lib/format";
+import { SCENARIO_LABELS } from "@/lib/calc/sharedEngineHelpers";
 import { whoImplementsEcm, whenToDoEcm, productForEcm } from "@/lib/ecmGuidance";
 import { ActionPlanChart, getActionPlanDefaults } from "./ActionPlanChart";
 import grantsData from "@data/grants.json";
@@ -118,6 +119,11 @@ export function ResultsHero({
         <p className="mt-1 text-sm text-ink-soft">
           What&apos;s possible for your Scope 1 + 2 footprint, based on your own numbers — not a generic percentage.
           Most figures below reflect whichever measures you select in the checklist below, and include projected tariff escalation and carbon tax savings. Check or uncheck measures there to see how they affect these numbers.
+        </p>
+        <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-medium text-brand-700">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500" />
+          Using {SCENARIO_LABELS[result.carbonPriceScenario]} scenario
+          {result.carbonPriceScenario !== "base" && " — change this in the first tab under '2030 carbon price scenario'"}
         </p>
 
         {result.criticalWarnings.length > 0 && (

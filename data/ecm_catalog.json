@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
-  "lastUpdated": "2026-09-26",
+  "version": "1.3.0",
+  "lastUpdated": "2026-09-30",
   "proxy": true,
-  "source": "Typical savings ranges compiled from US DOE / ENERGY STAR / ASHRAE efficiency-measure guidance — international benchmark ranges, not Singapore-metered results. Each range is the measure's saving as a % of the energy used by its own end-use category (e.g. a refrigeration measure's % is of refrigeration energy, not total electricity). Air-side economizers/free-cooling are intentionally excluded — not applicable to Singapore's tropical climate. `certainty` (\"high\" = hardware/capital measure with a fixed physical effect; \"variable\" = controls/software/behavioral measure whose realized saving depends on ongoing configuration and use, per site-visit feedback that BMS/setpoint-type savings are not guaranteed) and `effortTier` (\"low\"/\"medium\"/\"high\" implementation effort/disruption, distinct from cost) were added this phase to support ROI+effort-based ranking and honest confidence labeling — both are judgement calls made from the same evidence base, not separately re-sourced. Two chiller-plant measures (`high-efficiency-chiller-replacement`, `chiller-plant-optimization-controls`) were added 2026-09-24 to close a gap for commercial-building clients (Office/Professional Services, Retail, Hospitality, Healthcare) whose HVAC bill is chiller-plant-dominated — previously only fan/pump VSDs and generic BMS scheduling covered the HVAC end-use, with no measure addressing the chiller itself. Four more measures (`hvac-ec-fan-motor-retrofit`, `hvac-plant-room-ventilation`, `refrigeration-leak-detection-repair`, `refrigeration-low-gwp-transition`) were added 2026-09-26 from a client-supplied chiller/refrigeration ECM list, closing gaps in fan-motor hardware, plant-room heat rejection, and refrigerant-leak/transition measures. Onsite solar generation and RECs/EACs from that same list were deliberately NOT added here: they don't reduce an end-use's energy consumption the way every other catalog measure does (solar generates power, RECs/EACs are a market-based accounting claim), so scoring them against an end-use would either misstate or silently zero their impact — they're already modeled correctly elsewhere via the dedicated onsite-solar and renewable-coverage inputs in Scope 2.",
+  "source": "Typical savings ranges compiled from US DOE / ENERGY STAR / ASHRAE efficiency-measure guidance — international benchmark ranges, not Singapore-metered results. Each range is the measure's saving as a % of the energy used by its own end-use category (e.g. a refrigeration measure's % is of refrigeration energy, not total electricity). Air-side economizers/free-cooling are intentionally excluded — not applicable to Singapore's tropical climate. `certainty` (\"high\" = hardware/capital measure with a fixed physical effect; \"variable\" = controls/software/behavioral measure whose realized saving depends on ongoing configuration and use, per site-visit feedback that BMS/setpoint-type savings are not guaranteed) and `effortTier` (\"low\"/\"medium\"/\"high\" implementation effort/disruption, distinct from cost) were added this phase to support ROI+effort-based ranking and honest confidence labeling — both are judgement calls made from the same evidence base, not separately re-sourced. Two chiller-plant measures (`high-efficiency-chiller-replacement`, `chiller-plant-optimization-controls`) were added 2026-09-24 to close a gap for commercial-building clients (Office/Professional Services, Retail, Hospitality, Healthcare) whose HVAC bill is chiller-plant-dominated — previously only fan/pump VSDs and generic BMS scheduling covered the HVAC end-use, with no measure addressing the chiller itself. Four more measures (`hvac-ec-fan-motor-retrofit`, `hvac-plant-room-ventilation`, `refrigeration-leak-detection-repair`, `refrigeration-low-gwp-transition`) were added 2026-09-26 from a client-supplied chiller/refrigeration ECM list, closing gaps in fan-motor hardware, plant-room heat rejection, and refrigerant-leak/transition measures. Onsite solar generation and RECs/EACs from that same list were deliberately NOT added here: they don't reduce an end-use's energy consumption the way every other catalog measure does (solar generates power, RECs/EACs are a market-based accounting claim), so scoring them against an end-use would either misstate or silently zero their impact — they're already modeled correctly elsewhere via the dedicated onsite-solar and renewable-coverage inputs in Scope 2. On 2026-09-30, five F&B-tagged measures (refrigeration-floating-head-controls, walkin-door-strips-alarms, high-efficiency-refrigeration-compressors, kitchen-demand-control-ventilation, energy-star-cooking-equipment) and two Manufacturing-tagged measures (vsd-motors-pumps-fans, process-heat-recovery) were removed from those sectors specifically because they were not on the F&B/Manufacturing customer interview lists the pitch narrative is built around, to keep the live tool's F&B/Manufacturing recommendations consistent with what is said on stage. All five F&B measures remain available for the other sectors they were already tagged for (Retail, Hospitality, Logistics, Healthcare, as applicable); vsd-motors-pumps-fans remains available for Logistics; process-heat-recovery had no other sector tag and was deleted outright rather than left as a dead, sector-less entry.",
   "measures": [
     {
       "id": "led-lighting-retrofit",
@@ -161,7 +161,6 @@
       "label": "Refrigeration controls & floating head pressure",
       "endUseId": "refrigeration",
       "sectorTags": [
-        "F&B",
         "Retail",
         "Hospitality",
         "Logistics",
@@ -183,7 +182,6 @@
       "label": "Door strip curtains & open-door alarms on walk-in coolers",
       "endUseId": "refrigeration",
       "sectorTags": [
-        "F&B",
         "Retail",
         "Hospitality",
         "Logistics"
@@ -220,7 +218,6 @@
       "label": "High-efficiency refrigeration compressor replacement",
       "endUseId": "refrigeration",
       "sectorTags": [
-        "F&B",
         "Retail",
         "Logistics",
         "Healthcare"
@@ -281,7 +278,6 @@
       "label": "Demand-controlled kitchen exhaust hoods",
       "endUseId": "cooking",
       "sectorTags": [
-        "F&B",
         "Hospitality"
       ],
       "savingRange": {
@@ -299,7 +295,6 @@
       "label": "ENERGY STAR certified cooking equipment",
       "endUseId": "cooking",
       "sectorTags": [
-        "F&B",
         "Hospitality"
       ],
       "savingRange": {
@@ -335,7 +330,6 @@
       "label": "Variable-speed drives on process motors, pumps & fans",
       "endUseId": "compressedAirMotors",
       "sectorTags": [
-        "Manufacturing",
         "Logistics"
       ],
       "savingRange": {
@@ -347,23 +341,6 @@
       "effortTier": "medium",
       "evidence": "US DOE — VSDs on motor-driven pumps, fans and compressors typically cut that equipment's energy 15-25%.",
       "howToImplement": "Fit variable-speed drives to existing process motors, pumps and fans and commission them to modulate with actual load."
-    },
-    {
-      "id": "process-heat-recovery",
-      "label": "Waste heat recovery on process equipment",
-      "endUseId": "process",
-      "sectorTags": [
-        "Manufacturing"
-      ],
-      "savingRange": {
-        "low": 0.05,
-        "high": 0.12
-      },
-      "costTier": "high",
-      "certainty": "high",
-      "effortTier": "high",
-      "evidence": "US DOE — waste heat recovery on industrial process equipment typically saves 5-12% of process energy.",
-      "howToImplement": "Install heat exchangers to capture waste heat from process equipment (exhaust, cooling water) and reuse it elsewhere in the facility — an engineering-led capital project."
     },
     {
       "id": "laundry-heat-recovery",

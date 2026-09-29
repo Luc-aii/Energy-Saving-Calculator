@@ -180,7 +180,11 @@ export interface AlreadyImplementedEcmSummary {
   dollarSavedPerMonthMid: number;
 }
 
+import type { CarbonPriceScenario } from "./inputs";
+
 export interface CalculationResult {
+  /** Which carbon price scenario (conservative/base/optimistic) was used for this calculation — drives both the carbon tax trajectory and the savings rate delta. */
+  carbonPriceScenario: CarbonPriceScenario;
   baselineScope1TCo2e: number;
   baselineScope2TCo2e: number;
   baselineScope3TCo2e: number;

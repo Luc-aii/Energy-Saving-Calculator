@@ -22,7 +22,7 @@ import {
   rankRemainingEcms,
   computeAlreadyImplementedValue,
 } from "./ecm";
-import { nonNeg, buildFinalPositionLabel, savingsRateSanityWarnings, fastPaybackWarning } from "./sharedEngineHelpers";
+import { nonNeg, buildFinalPositionLabel, savingsRateSanityWarnings, fastPaybackWarning, applySavingsRateDelta } from "./sharedEngineHelpers";
 
 const PROJECTION_YEARS = 10;
 const GEF_BASE = emissionFactors.electricity.singapore.gridEmissionFactorKgPerKwh;
@@ -262,7 +262,8 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
   // relationship explicit and always states the assumed rate exactly once (shared with engine.ts).
   const finalPositionLabel = buildFinalPositionLabel(positionLabel, savingRatePct, ecmResult, inputs.sensitivity.savingsRateOverridePct);
 
-  const finalSavingRatePct = inputs.sensitivity.savingsRateOverridePct ?? ecmResult?.ratePctMid ?? savingRatePct;
+  const rawSavingRate = inputs.sensitivity.savingsRateOverridePct ?? ecmResult?.ratePctMid ?? savingRatePct;
+  const finalSavingRatePct = applySavingsRateDelta(rawSavingRate, inputs.carbonPriceScenario, !!inputs.sensitivity.savingsRateOverridePct);
   warnings.push(...savingsRateSanityWarnings(finalSavingRatePct));
 
   // ---- Suggested investment range from the further-opportunity ECMs' cost tiers (usability finding M3) ----
@@ -383,6 +384,7 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
   });
 
   const result: CalculationResult = {
+    carbonPriceScenario: inputs.carbonPriceScenario,
     baselineScope1TCo2e,
     baselineScope2TCo2e,
     baselineScope3TCo2e,

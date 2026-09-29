@@ -1,4 +1,38 @@
 import type { EcmResultSummary } from "@/lib/types/results";
+import type { CarbonPriceScenario } from "@/lib/types/inputs";
+
+/**
+ * Scenario-specific savings rate adjustment per PRD section 6.4 — conservative assumptions shave
+ * the rate down, optimistic boosts it. This is applied on top of the ECM/calibration-derived base
+ * rate in the engine itself (not only in scenario comparison) so that the headline figures on the
+ * results page directly reflect whichever scenario the user picked.
+ */
+export const SAVINGS_RATE_DELTA: Record<CarbonPriceScenario, number> = {
+  conservative: -0.07,
+  base: 0,
+  optimistic: 0.08,
+};
+
+/** Human-readable labels for the carbon price scenario — used in the results UI. */
+export const SCENARIO_LABELS: Record<CarbonPriceScenario, string> = {
+  conservative: "Conservative",
+  base: "Base case",
+  optimistic: "Optimistic",
+};
+
+/**
+ * Apply the scenario-specific delta to a raw savings rate. When the user has set a manual override
+ * the delta is intentionally skipped — an explicit manual figure should be taken at face value.
+ * Floors at 2% so an aggressive conservative delta can't force savings to zero.
+ */
+export function applySavingsRateDelta(
+  rawRate: number,
+  scenario: CarbonPriceScenario,
+  hasManualOverride: boolean
+): number {
+  if (hasManualOverride) return rawRate;
+  return Math.max(rawRate + SAVINGS_RATE_DELTA[scenario], 0.02);
+}
 
 /**
  * Pulled out of engine.ts and mncEngine.ts, which had each grown their own copy of these — safe,

@@ -22,7 +22,9 @@ export const defaultSmeInputs: SmeInputs = {
     hasGenerator: false,
   },
   refrigerants: {
-    hasRefrigerants: false,
+    hasRefrigerants: true,
+    refrigerantType: "R-410A",
+    refrigerantAnnualTopUpKg: 8,
   },
   scope3: {
     annualLogisticsSpendSgd: 200000,
@@ -35,7 +37,7 @@ export const defaultSmeInputs: SmeInputs = {
     isSupplierToSbtiBuyer: false,
     implementedOrInProgressEcmIds: [],
   },
-  estimatedInvestmentSgd: 150000,
+  estimatedInvestmentSgd: 21000,
   carbonPriceScenario: "base",
   sensitivity: {},
 };

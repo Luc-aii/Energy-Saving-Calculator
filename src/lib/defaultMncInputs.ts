@@ -2,32 +2,29 @@ import type { MncInputs } from "@/lib/types/mncInputs";
 
 export const defaultMncInputs: MncInputs = {
   companyName: "Regional HQ Pte Ltd",
-  sector: "Manufacturing",
+  sector: "Office/Professional Services",
   isListedOnSgx: true,
   totalEmployees: 1200,
   sites: [
-    { id: "site-1", name: "Site 1 — HQ", monthlyElectricityKwh: 833333, renewableCoveragePct: 5 },
-    { id: "site-2", name: "Site 2 — Plant A", monthlyElectricityKwh: 833333, renewableCoveragePct: 0 },
-    { id: "site-3", name: "Site 3 — Plant B", monthlyElectricityKwh: 833333, renewableCoveragePct: 0 },
+    { id: "site-1", name: "Site 1 — HQ Tower", monthlyElectricityKwh: 291667, renewableCoveragePct: 5, floorAreaM2: 25000 },
+    { id: "site-2", name: "Site 2 — Regional Office A", monthlyElectricityKwh: 291667, renewableCoveragePct: 0, floorAreaM2: 25000 },
+    { id: "site-3", name: "Site 3 — Regional Office B", monthlyElectricityKwh: 291667, renewableCoveragePct: 0, floorAreaM2: 25000 },
   ],
   fuelFleet: {
-    mobileDieselLitresPerYear: 60000,
-    isManufacturing: true,
-    processCombustionGJPerYear: 5000,
+    mobileDieselLitresPerYear: 15000,
+    isManufacturing: false,
   },
   refrigerants: {
     entries: [{ gasType: "R-410A", kgPerYear: 50 }],
   },
   scope3: {
-    purchasedGoodsSpendByCategorySgd: [{ category: "Raw materials", spendSgd: 50000000 }],
-    upstreamFreightTonneKm: { road: 1500000, rail: 0, sea: 500000, air: 0 },
+    purchasedGoodsSpendByCategorySgd: [{ category: "IT equipment & services", spendSgd: 15000000 }],
     shortHaulPassengerKm: 100000,
     longHaulPassengerKm: 500000,
     hotelNights: 200,
     commuteModeSplitPct: { public: 60, car: 30 },
     averageCommuteKm: 15,
     wfhDaysPerWeek: 1,
-    downstreamFreightTonneKm: { road: 500000, sea: 200000, air: 0 },
   },
   baseline: {
     sbtiStatus: "in-progress",
