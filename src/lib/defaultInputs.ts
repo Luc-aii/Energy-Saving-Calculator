@@ -12,7 +12,13 @@ export const defaultSmeInputs: SmeInputs = {
     monthlyElectricityKwh: 15000,
     hasSolar: false,
     monthlyNaturalGasGJ: undefined,
-    tariffEscalationPctPerYear: 0,
+    // 2%/year — an illustrative assumption, not a precise forecast: SP Group's own recent quarterly
+    // tariff has been too volatile to derive a reliable trend from (+17% in 2026-Q3, then -10.4% in
+    // 2026-Q4 alone — see tariff_config.json), so this isn't back-derived from that noisy window.
+    // Grounded instead in the documented structural upward pressure (carbon tax rising toward
+    // S$50-80/tCO2e by 2030, ~95% import-gas exposure) and matches the same assumption already used
+    // for the judge company illustration reports elsewhere in this project.
+    tariffEscalationPctPerYear: 0.02,
   },
   fuelFleet: {
     hasVehicles: true,

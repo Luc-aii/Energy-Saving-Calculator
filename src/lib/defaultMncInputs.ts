@@ -39,7 +39,9 @@ export const defaultMncInputs: MncInputs = {
   estimatedInvestmentSgd: 2000000,
   carbonPriceScenario: "base",
   sensitivity: {},
-  tariffEscalationPctPerYear: 0,
+  // Same 2%/year illustrative assumption as defaultSmeInputs — see the note there for why this
+  // isn't back-derived from SP Group's own noisy recent quarterly swings.
+  tariffEscalationPctPerYear: 0.02,
 };
 
 /**
