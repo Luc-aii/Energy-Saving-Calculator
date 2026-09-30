@@ -25,7 +25,9 @@ export function scoreMncConfidence(inputs: MncInputs): ConfidenceResult {
     reasons.push("One or more sites use the reference tariff instead of an actual contract rate");
   }
 
-  const sitesEstimatedFromFloorArea = inputs.sites.filter((s) => !s.monthlyElectricityKwh && s.floorAreaM2).length;
+  const sitesEstimatedFromFloorArea = inputs.sites.filter(
+    (s) => !s.monthlyElectricityKwh && !s.electricityMonthlyReadings?.some((v) => Number.isFinite(v) && v > 0) && s.floorAreaM2
+  ).length;
   if (sitesEstimatedFromFloorArea > 0) {
     // Weakest electricity data source: a sector-average kWh/m² multiplied by floor area, not
     // anything the site actually measured or paid — inherits into every downstream figure.

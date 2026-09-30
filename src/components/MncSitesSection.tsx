@@ -51,7 +51,20 @@ export function MncSitesSection({ inputs, patchers }: { inputs: MncInputs; patch
         </button>
       </div>
       <div className="flex flex-col gap-3">
-        {inputs.sites.map((site) => (
+        {inputs.sites.map((site) => {
+          // Same pattern as the SME Scope2ElectricitySection: presence of the field in state (not a
+          // separate UI-only flag) decides whether this site's breakdown grid is open.
+          const monthlyReadings = site.electricityMonthlyReadings;
+          const showMonthlyReadings = monthlyReadings !== undefined;
+          const patchReading = (idx: number, value: number | undefined) => {
+            const next = [...(monthlyReadings ?? Array(12).fill(0))];
+            next[idx] = value ?? 0;
+            patchSite(site.id, "electricityMonthlyReadings", next);
+          };
+          const filledReadings = (monthlyReadings ?? []).filter((v) => Number.isFinite(v) && v > 0);
+          const readingsAvgMonthly = filledReadings.length > 0 ? filledReadings.reduce((a, b) => a + b, 0) / filledReadings.length : 0;
+
+          return (
           <div key={site.id} className="rounded-lg border border-border p-3">
             <div className="mb-2 flex items-center justify-between">
               <input
@@ -69,12 +82,46 @@ export function MncSitesSection({ inputs, patchers }: { inputs: MncInputs; patch
               </button>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <FieldRow label="Monthly electricity (kWh)" required>
+              <FieldRow label="Monthly electricity (kWh)" hint="Used if no 12-month history is entered below." required>
                 <NumberInput className={inputClass} value={site.monthlyElectricityKwh} onChange={(n) => patchSite(site.id, "monthlyElectricityKwh", n)} />
               </FieldRow>
               <FieldRow label="Renewable coverage (%)" hint="RECs/PPA/green tariff for this site. Splits its cost into a clean share (priced with a premium) and dirty share, and lowers the CO2e-avoided figure this site's savings measures can claim, since already-clean kWh can't avoid further emissions. Also surfaces onsite generation / backup-power measures for this site.">
                 <NumberInput min={0} max={100} className={inputClass} value={site.renewableCoveragePct} onChange={(n) => patchSite(site.id, "renewableCoveragePct", Math.min(n, 100))} />
               </FieldRow>
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-brand-600 hover:underline"
+                  onClick={() => patchSite(site.id, "electricityMonthlyReadings", showMonthlyReadings ? undefined : Array(12).fill(0))}
+                >
+                  {showMonthlyReadings ? "Hide 12-month history for this site" : "Have 12 months of bills for this site? Enter the full history"}
+                </button>
+                {showMonthlyReadings && (
+                  <div className="mt-2 rounded-lg border border-border bg-white p-2.5">
+                    <p className="mb-2 text-[11px] text-ink-soft">
+                      One box per month — any order, doesn&apos;t need to be calendar-aligned. We average whatever you fill in for
+                      this site and use that instead of its single field above.
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <FieldRow key={i} label={`Month ${i + 1}`}>
+                          <input
+                            type="number"
+                            className={inputClass}
+                            value={monthlyReadings?.[i] || ""}
+                            onChange={(e) => patchReading(i, numOrUndef(e.target.value))}
+                          />
+                        </FieldRow>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-ink-soft">
+                      {filledReadings.length > 0
+                        ? `${filledReadings.length} of 12 filled in — averaging ${Math.round(readingsAvgMonthly).toLocaleString("en-SG")} kWh/month (${Math.round(readingsAvgMonthly * 12).toLocaleString("en-SG")} kWh/year) for this site, overriding the single field above.`
+                        : "Nothing filled in yet — this site's single field above is still used until at least one month here has a value."}
+                    </p>
+                  </div>
+                )}
+              </div>
               <FieldRow label="Floor area (m²)" hint="Feeds this site's energy-intensity benchmark. If this site's kWh is left blank, it also becomes the basis for estimating that site's electricity use — and therefore its $ savings, payback and CO2e.">
                 <input type="number" className={inputClass} value={site.floorAreaM2 ?? ""} onChange={(e) => patchSite(site.id, "floorAreaM2", numOrUndef(e.target.value))} />
               </FieldRow>
@@ -127,7 +174,8 @@ export function MncSitesSection({ inputs, patchers }: { inputs: MncInputs; patch
               </Advanced>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="mt-3 border-t border-border pt-3">
         <p className="text-sm font-medium text-ink">Where your energy goes</p>

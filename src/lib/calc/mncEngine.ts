@@ -64,12 +64,22 @@ export function calculateMnc(inputs: MncInputs): CalculationResult {
   let sitesEstimatedFromFloorArea = 0;
 
   for (const s of inputs.sites) {
-    let siteKwh = nonNeg(s.monthlyElectricityKwh) * 12;
-    if (siteKwh <= 0) {
-      const floorAreaEstimate = estimateAnnualKwhFromFloorArea(inputs.sector, s.subProfile, nonNeg(s.floorAreaM2));
-      if (floorAreaEstimate !== null) {
-        siteKwh = floorAreaEstimate;
-        sitesEstimatedFromFloorArea += 1;
+    // Same priority order as SME mode (engine.ts): a 12-month reading history, if this site has
+    // one, is averaged and takes priority over the single "latest month" field — a truer annual
+    // total for a site with seasonal swings than one month x12.
+    const siteReadings = s.electricityMonthlyReadings?.filter((v) => Number.isFinite(v) && v > 0);
+    let siteKwh: number;
+    if (siteReadings && siteReadings.length > 0) {
+      const avgMonthly = siteReadings.reduce((a, b) => a + b, 0) / siteReadings.length;
+      siteKwh = avgMonthly * 12;
+    } else {
+      siteKwh = nonNeg(s.monthlyElectricityKwh) * 12;
+      if (siteKwh <= 0) {
+        const floorAreaEstimate = estimateAnnualKwhFromFloorArea(inputs.sector, s.subProfile, nonNeg(s.floorAreaM2));
+        if (floorAreaEstimate !== null) {
+          siteKwh = floorAreaEstimate;
+          sitesEstimatedFromFloorArea += 1;
+        }
       }
     }
     const siteTariff = s.tariffSgdPerKwh ?? inputs.defaultTariffOverrideSgdPerKwh ?? DEFAULT_TARIFF;

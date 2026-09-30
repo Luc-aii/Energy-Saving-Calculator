@@ -23,6 +23,19 @@ export function Scope2ElectricitySection({
 }) {
   const { patchEnergy } = patchers;
 
+  // Undefined = not using the breakdown; an array (even all-zero) = the toggle is open. Mirrors the
+  // showEndUseCustomizer pattern below: presence of the field in state, not a separate UI-only flag,
+  // decides what's shown, so there's one source of truth for "which mode is the user in."
+  const monthlyReadings = inputs.energy.electricityMonthlyReadings;
+  const showMonthlyReadings = monthlyReadings !== undefined;
+  const patchReading = (idx: number, value: number | undefined) => {
+    const next = [...(monthlyReadings ?? Array(12).fill(0))];
+    next[idx] = value ?? 0;
+    patchEnergy("electricityMonthlyReadings", next);
+  };
+  const filledReadings = (monthlyReadings ?? []).filter((v) => Number.isFinite(v) && v > 0);
+  const readingsAvgMonthly = filledReadings.length > 0 ? filledReadings.reduce((a, b) => a + b, 0) / filledReadings.length : 0;
+
   const showEndUseCustomizer = inputs.energy.customEndUsePct !== undefined;
   const endUseBreakdown = getEndUseBreakdown(inputs.universal.sector, inputs.energy.subProfile, inputs.energy.customEndUsePct);
   const patchEndUsePct = (id: string, pct: number) => {
@@ -46,6 +59,43 @@ export function Scope2ElectricitySection({
             onChange={(e) => patchEnergy("monthlyElectricityKwh", numOrUndef(e.target.value))}
           />
         </FieldRow>
+
+        <div className="sm:col-span-2">
+          <button
+            type="button"
+            className="text-xs font-medium text-brand-600 hover:underline"
+            onClick={() => patchEnergy("electricityMonthlyReadings", showMonthlyReadings ? undefined : Array(12).fill(0))}
+          >
+            {showMonthlyReadings ? "Hide 12-month history" : "Have 12 months of bills instead of one? Enter the full history"}
+          </button>
+          {showMonthlyReadings && (
+            <div className="mt-2 rounded-lg border border-border bg-white p-2.5">
+              <p className="mb-2 text-[11px] text-ink-soft">
+                One box per month — any order, doesn&apos;t need to be calendar-aligned. We average whatever you fill in and use that
+                instead of the single field above, so a business with seasonal swings (e.g. a hotter-month aircon spike) gets a truer
+                annual total than guessing one &quot;typical&quot; month.
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <FieldRow key={i} label={`Month ${i + 1}`}>
+                    <input
+                      type="number"
+                      className={inputClass}
+                      value={monthlyReadings?.[i] || ""}
+                      onChange={(e) => patchReading(i, numOrUndef(e.target.value))}
+                    />
+                  </FieldRow>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-ink-soft">
+                {filledReadings.length > 0
+                  ? `${filledReadings.length} of 12 filled in — averaging ${Math.round(readingsAvgMonthly).toLocaleString("en-SG")} kWh/month (${Math.round(readingsAvgMonthly * 12).toLocaleString("en-SG")} kWh/year), overriding the single field above.`
+                  : "Nothing filled in yet — the single field above is still used until at least one month here has a value."}
+              </p>
+            </div>
+          )}
+        </div>
+
         <FieldRow label="Or: monthly electricity spend (S$)" hint="Used only if kWh is unknown — back-calculated at the reference tariff">
           <input
             type="number"

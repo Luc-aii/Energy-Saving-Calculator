@@ -8,8 +8,10 @@ export type SbtiStatus = "committed" | "in-progress" | "none";
 export interface MncSite {
   id: string;
   name: string;
-  /** Primary electricity input — monthly, consistent with monthly-first framing across the tool. Annualized internally (x12). */
+  /** Primary electricity input — monthly, consistent with monthly-first framing across the tool. Annualized internally (x12). Used if electricityMonthlyReadings is not supplied. */
   monthlyElectricityKwh: number;
+  /** Up to 12 monthly kWh readings for this site; averaged when present and takes priority over monthlyElectricityKwh — same semantics as BlockAEnergy.electricityMonthlyReadings in SME mode. */
+  electricityMonthlyReadings?: number[];
   /** Per-site tariff — MNCs are often on contestable rates below the regulated tariff. Falls back to MncInputs.defaultTariffOverrideSgdPerKwh, then the data-file reference tariff. */
   tariffSgdPerKwh?: number;
   /** % of consumption covered by onsite solar / PPA / RECs / green tariff (market-based accounting). */
