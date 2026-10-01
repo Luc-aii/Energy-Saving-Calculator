@@ -4,11 +4,13 @@ import tariffConfig from "@data/tariff_config.json";
 import sectorEnergyEndUse from "@data/sector_energy_enduse.json";
 import type { AssumptionLine } from "@/lib/types/results";
 import type { MncInputs } from "@/lib/types/mncInputs";
+import { currentAndPreviousLegislatedBrackets } from "./assumptions";
 
 export const MNC_DATA_VERSION = "2.3.1";
 
 export function buildMncAssumptions(inputs: MncInputs, weightedTariff: number, weightedGef: number, savingRatePct: number, isLiable: boolean): AssumptionLine[] {
   const anySiteGefOverride = inputs.sites.some((s) => s.gridEmissionFactorOverrideKgPerKwh !== undefined) || inputs.defaultGridEmissionFactorOverrideKgPerKwh !== undefined;
+  const { current: currentBracket, previous: previousBracket } = currentAndPreviousLegislatedBrackets();
   const anySiteRenewable = inputs.sites.some((s) => s.renewableCoveragePct > 0);
   return [
     {
@@ -42,14 +44,18 @@ export function buildMncAssumptions(inputs: MncInputs, weightedTariff: number, w
       value: isLiable ? "Direct taxpayer — Scope 1 ≥ 25,000 tCO2e/year or self-reported IRAS exposure" : "Not a direct taxpayer (pass-through only)",
       source: "NEA Carbon Pricing Act — applies to direct (Scope 1) emitters only, ~50 facilities nationally",
     },
+    ...(previousBracket
+      ? [
+          {
+            label: `Previous Rate (${previousBracket.years})`,
+            value: `S$${previousBracket.rate} per tCO2e`,
+            source: "NEA / MSE Singapore",
+          } satisfies AssumptionLine,
+        ]
+      : []),
     {
-      label: "Current Rate (2024-2025)",
-      value: `S$${carbonTaxSchedule.legislated["2025"]} per tCO2e`,
-      source: "NEA / MSE Singapore",
-    },
-    {
-      label: "Legislated Rate (2026-2027)",
-      value: `S$${carbonTaxSchedule.legislated["2026"]} per tCO2e`,
+      label: `Current Rate (${currentBracket.years})`,
+      value: `S$${currentBracket.rate} per tCO2e`,
       source: "NEA / MSE Singapore",
     },
     {

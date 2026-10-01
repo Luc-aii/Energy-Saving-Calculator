@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "lastUpdated": "2026-09-21",
   "proxy": true,
-  "source": "International/market-survey composite (no Singapore-specific end-use metering study was found) — see per-sector citations below. Not a regulator-published figure like the grid emission factor or carbon tax schedule; shown to the user as an indicative default, editable.",
+  "source": "International/market-survey composite (no Singapore-specific end-use metering study was found). Not a regulator-published figure like the grid emission factor or carbon tax schedule; shown to the user as an indicative default, editable. Each sector entry below carries its own per-sector 'sources' citation array, not yet surfaced in the UI.",
   "endUseLabels": {
     "hvac": "HVAC / space cooling",
     "refrigeration": "Refrigeration / cold storage",

@@ -13,7 +13,7 @@
     "dieselKgCo2ePerLitre": 2.68,
     "petrolKgCo2ePerLitre": 2.29,
     "cngKgCo2ePerKg": 2.56,
-    "source": "Diesel/petrol: Singapore Emission Factors Registry (SEFR) / NEA. CNG: UK DEFRA 2023 conversion factors via Climatiq (2562.57 kg CO2e/tonne stationary combustion), verified 2026-09-17 — was previously 2.15, understated by ~19% relative to this sourced figure and to the stoichiometric pure-methane combustion value (~2.75 kg CO2/kg CH4); CNG is ~85-95% methane so a value just below 2.75 is expected."
+    "source": "Diesel/petrol: Singapore Emission Factors Registry (SEFR) / NEA. CNG: UK DEFRA 2023 conversion factors via Climatiq (2562.57 kg CO2e/tonne stationary combustion)."
   },
   "naturalGas": {
     "kgCo2ePerGJ": 50.67,

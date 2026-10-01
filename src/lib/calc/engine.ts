@@ -406,7 +406,10 @@ export function calculateSme(inputs: SmeInputs): CalculationResult {
   }
 
   const staleness = checkStaleness();
-  const assumptions = buildAssumptions(inputs, tariff, gef, savingRatePct, isLiable);
+  const assumptions = buildAssumptions(inputs, tariff, gef, savingRatePct, isLiable, {
+    activityBasedTCo2e: flightsTCo2e + commutingTCo2e,
+    spendBasedTCo2e: logisticsTCo2e + purchasedGoodsTCo2e,
+  });
   const kpis = buildKpis({
     sector: inputs.universal.sector,
     subProfile: inputs.energy.subProfile,
